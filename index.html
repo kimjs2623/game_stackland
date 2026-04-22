@@ -170,6 +170,7 @@
           <span class="text-[10px] font-black text-indigo-400 uppercase bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">Multiplayer</span>
           <span class="text-xs font-black text-slate-600 mt-1">방: <span id="display-room-code" class="text-indigo-600"></span></span>
         </div>
+        <!-- 거래 버튼 (멀티 전용) -->
         <button id="btn-trade" onclick="window.toggleTradeModal()" class="hidden py-2 px-3 bg-purple-50 text-purple-700 rounded-xl font-black text-xs hover:bg-purple-100 transition-colors shadow-sm border border-purple-200 hover:scale-105 flex-col items-center justify-center">
           <i class="ph-bold ph-handshake text-lg mb-0.5"></i> 거래소
         </button>
@@ -340,7 +341,7 @@
     let isExternalMode = false;
 
     try { 
-      if (typeof __firebase_config !== 'undefined') {
+      if (typeof __firebase_config !== 'undefined' && __firebase_config) {
         firebaseConfig = JSON.parse(__firebase_config); 
       } else {
         isExternalMode = true;
@@ -354,36 +355,43 @@
           measurementId: "G-4GPBGX5K4R"
         };
       }
-    } catch(e) { }
-
+    } catch(e) { 
+      isExternalMode = true;
+      firebaseConfig = {
+        apiKey: "AIzaSyDfItNnUuQ4wf6g8QPLiyXcjhXYEavRsKA",
+        authDomain: "game-stackland.firebaseapp.com",
+        projectId: "game-stackland",
+        storageBucket: "game-stackland.firebasestorage.app",
+        messagingSenderId: "684632891695",
+        appId: "1:684632891695:web:5b186f9f5b0a108888c1da",
+        measurementId: "G-4GPBGX5K4R"
+      }; 
+    }
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'sky-tycoon-external';
 
-    let db, auth, user = null;
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    let user = null;
     let isFirebaseReady = false;
 
-    async function initFirebase() {
-        if (isExternalMode && (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("YOUR_API_KEY_HERE"))) {
-            console.log("Firebase API 키 누락됨.");
-            return; 
-        }
+    const initAuth = async () => {
         try {
-            const app = initializeApp(firebaseConfig); 
-            auth = getAuth(app); 
-            db = getFirestore(app);
-            
-            onAuthStateChanged(auth, (u) => { 
-                user = u; 
-                isFirebaseReady = true; 
-            });
-            
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 await signInWithCustomToken(auth, __initial_auth_token);
             } else {
                 await signInAnonymously(auth);
             }
-        } catch(e) { console.warn("Firebase Auth Error", e); }
-    }
-    initFirebase();
+        } catch(e) { 
+            console.warn("Firebase Auth Error:", e); 
+        }
+    };
+    initAuth();
+
+    onAuthStateChanged(auth, (u) => { 
+        user = u; 
+        isFirebaseReady = true;
+    });
 
     // --- Data ---
     const TILES = {
@@ -465,15 +473,17 @@
     // --- State ---
     window.state = {
       mode: 'single', roomId: null, myPlayerId: null, turnCount: 1, money: 0, stacks: [], sharedPool: [], displayPool: [], draggingStack: null, market: {}, newsHistory: [], unlockedSpecialty: null, 
-      playerIds: [], playersData: {}, viewingOpponent: false, viewingPlayerId: null, // N인용 관찰 및 턴 관리
+      playerIds: [], playersData: {}, viewingOpponent: false, viewingPlayerId: null,
       prof: { farming: { lv: 1, exp: 0 }, mining: { lv: 1, exp: 0 }, woodcraft: { lv: 1, exp: 0 }, cooking: { lv: 1, exp: 0 }, smithing: { lv: 1, exp: 0 } },
       chat: [], isChatOpen: false, 
-      activeTrade: null, localTradeOffer: { money: 0, items: [] } // N인용 1:1 거래 세션 관리
+      activeTrade: null, localTradeOffer: { money: 0, items: [] }
     };
     
-    window.nextStackId = 1; let unsubSnapshot = null; window.dragData = null;
+    window.nextStackId = 1; 
+    window.unsubSnapshot = null; 
+    window.dragData = null;
 
-    // --- UI Helpers ---
+    // --- Helpers ---
     window.notify = function(msg, type = 'info') {
       const container = document.getElementById('notif-container');
       if (!container) return;
@@ -497,7 +507,6 @@
       }
     };
 
-    // --- 모달 토글들 ---
     window.toggleRecipeModal = function() {
       const m = document.getElementById('modal-recipe');
       if (m.classList.contains('hidden')) { m.classList.remove('hidden'); m.classList.add('flex'); window.renderRecipeList(); setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10); }
@@ -521,7 +530,6 @@
       setTimeout(() => { s.classList.add('opacity-0'); c.classList.add('scale-90'); setTimeout(() => s.classList.add('hidden'), 500); }, 3500);
     };
 
-    // 툴팁
     window.showTooltip = function(id, e) {
       if (window.state.draggingStack || window.state.viewingOpponent) return;
       const rel = RECIPES.filter(r => (!r.isSpecialty || r.unlockId === window.state.unlockedSpecialty) && (r.inputs.includes(id) || r.results.includes(id)));
@@ -534,8 +542,23 @@
       }).join('');
       tt.classList.remove('hidden'); window.moveTooltip(e);
     };
+    
     window.hideTooltip = function() { const tt = document.getElementById('tooltip'); if(tt) tt.classList.add('hidden'); };
     window.moveTooltip = function(e) { const tt = document.getElementById('tooltip'); if(tt){ tt.style.left = (e.clientX + 15) + 'px'; tt.style.top = (e.clientY + 15) + 'px'; } };
+
+    window.changeViewPlayer = function(pid) {
+       window.state.viewingOpponent = (pid !== 'me');
+       window.state.viewingPlayerId = pid === 'me' ? null : pid;
+       const overlay = document.getElementById('opponent-overlay');
+       if (window.state.viewingOpponent) { 
+           overlay.classList.remove('hidden'); overlay.classList.add('flex'); 
+           document.getElementById('overlay-opp-score').innerText = window.state.playersData[pid].money; 
+       } else { 
+           overlay.classList.add('hidden'); overlay.classList.remove('flex'); 
+           document.getElementById('view-player-select').value = 'me';
+       }
+       window.renderAll();
+    };
 
     // --- App Flow ---
     window.startGame = function(mode) {
@@ -552,7 +575,7 @@
       setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
     };
 
-    // --- N인용 대기실/방 생성/참가 ---
+    // --- Multiplayer ---
     window.createRoom = async function() {
       if (!isFirebaseReady || !user) return window.notify("서버 연결 중입니다. 잠시 후 다시 시도해주세요.", "error");
       
@@ -567,7 +590,7 @@
       await setDoc(roomRef, {
         status: 'waiting', host: 'Player 1', playerIds: ['Player 1'], chat: []
       });
-      startSync(roomRef);
+      window.startSync(roomRef);
     };
 
     window.joinRoom = async function() {
@@ -590,14 +613,12 @@
       document.getElementById('waiting-room-code').innerText = window.state.roomId;
 
       await updateDoc(roomRef, { playerIds: arrayUnion(myId) });
-      startSync(roomRef); 
+      window.startSync(roomRef); 
     };
 
-    // 방장이 게임 시작 버튼 누름
     window.startMultiGame = async function() {
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
       
-      // 초기 자원 세팅 생성
       const initialStacks = [];
       const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
       const starts = ['wood', 'stone', 'seed', 'water', 'fire', 'villager'];
@@ -618,11 +639,10 @@
       await updateDoc(roomRef, {
          status: 'playing', turnCount: 1, playersData: playersData, 
          sharedPool: fullPool.slice(4), displayPool: fullPool.slice(0, 4), market: window.state.market, newsHistory: window.state.newsHistory,
-         activeTrade: null // N인용 단일 거래 세션
+         activeTrade: null 
       });
     };
 
-    // 로컬 게임 초기화 (멀티 게임 시작 시 호출됨)
     window.initMultiPlayEnv = function(data) {
       window.state.mode = 'multi-play';
       window.state.turnCount = data.turnCount; window.state.market = data.market; window.state.sharedPool = data.sharedPool; window.state.displayPool = data.displayPool; window.state.newsHistory = data.newsHistory || [];
@@ -635,12 +655,10 @@
       const w = boardEl.clientWidth || 800; const h = boardEl.clientHeight || 600;
       window.state.stacks = myData.stacks.map(s => ({...s, x: s.xRatio * w, y: s.yRatio * h}));
 
-      // 상대방 정찰 드롭다운 셋팅
       let opts = `<option value="me">내 영지 보기</option>`;
       window.state.playerIds.forEach(p => { if(p !== window.state.myPlayerId) opts += `<option value="${p}">${p} 영지 정찰</option>`; });
       document.getElementById('view-player-select').innerHTML = opts;
 
-      // 채팅 귓속말 대상 셋팅
       let chatOpts = `<option value="all">전체에게</option>`;
       window.state.playerIds.forEach(p => { if(p !== window.state.myPlayerId) chatOpts += `<option value="${p}">${p}에게 귓속말</option>`; });
       document.getElementById('chat-target-select').innerHTML = chatOpts;
@@ -656,15 +674,23 @@
       window.renderAll();
     };
 
-    // (싱글 전용)
+    // --- Single Player ---
     window.initGame = function() {
       window.state.turnCount = 1; window.state.money = 0; window.state.stacks = []; window.nextStackId = 1; window.state.viewingOpponent = false;
       window.state.prof = { farming: {lv:1,exp:0}, mining: {lv:1,exp:0}, woodcraft: {lv:1,exp:0}, cooking: {lv:1,exp:0}, smithing: {lv:1,exp:0} };
+      
       window.initMarket();
+      
       const poolItems = ['wood', 'stone', 'seed', 'water', 'fire'];
       const fullPool = Array.from({length: 200}, () => poolItems[Math.floor(Math.random() * poolItems.length)]);
       window.state.sharedPool = fullPool.slice(4); window.state.displayPool = fullPool.slice(0, 4);
 
+      window.spawnInitialResources();
+      window.evaluatePool(); window.renderAll(); window.showScreen('screen-game');
+      window.showSpecialtySelector();
+    };
+
+    window.spawnInitialResources = function() {
       const boardEl = document.getElementById('board-area');
       const w = boardEl.clientWidth || window.innerWidth/2; const h = boardEl.clientHeight || window.innerHeight/2;
       const cx = w / 2; const cy = h / 2;
@@ -673,28 +699,28 @@
          const angle = (idx / starts.length) * Math.PI * 2; const r = 120;
          window.state.stacks.push({ id: `s${window.nextStackId++}`, x: cx + Math.cos(angle)*r - 30, y: cy + Math.sin(angle)*r - 50, cards: [id], crafting: null });
       });
-
-      window.evaluatePool(); window.renderAll(); window.showScreen('screen-game');
-      window.showSpecialtySelector();
     };
 
-    // --- 멀티플레이 턴 관리 및 N인용 관찰 ---
-    window.changeViewPlayer = function(pid) {
-       window.state.viewingOpponent = (pid !== 'me');
-       window.state.viewingPlayerId = pid === 'me' ? null : pid;
-       
-       const overlay = document.getElementById('opponent-overlay');
-       if (window.state.viewingOpponent) { 
-           overlay.classList.remove('hidden'); overlay.classList.add('flex'); 
-           document.getElementById('overlay-opp-score').innerText = window.state.playersData[pid].money; 
-       } else { 
-           overlay.classList.add('hidden'); overlay.classList.remove('flex'); 
-           document.getElementById('view-player-select').value = 'me';
-       }
-       window.renderAll();
+    window.showSpecialtySelector = function() {
+      const m = document.getElementById('modal-specialty'); const c = document.getElementById('specialty-options');
+      c.innerHTML = SPECIALTY_OPTIONS.map(opt => `
+        <div onclick="window.selectSpecialty('${opt.id}')" class="bg-slate-800/80 hover:bg-slate-700/90 border-2 border-slate-600 hover:border-amber-400 p-8 rounded-3xl cursor-pointer transition-all transform hover:-translate-y-2 flex flex-col items-center shadow-xl group">
+          ${opt.icon} <h3 class="text-2xl font-black text-amber-300 mb-2 group-hover:text-amber-200">${opt.name}</h3>
+          <p class="text-slate-300 text-sm font-bold text-center leading-relaxed">${opt.desc}</p>
+        </div>`).join('');
+      m.classList.remove('hidden'); m.classList.add('flex');
+      setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10);
     };
 
-    // --- 진행 로직 ---
+    window.selectSpecialty = function(id) {
+      window.state.unlockedSpecialty = id;
+      const modal = document.getElementById('modal-specialty');
+      modal.classList.add('opacity-0'); modal.children[0].classList.add('scale-95');
+      setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+      window.notify(`${SPECIALTY_OPTIONS.find(o=>o.id===id).name} 레시피가 해금되었습니다!`, "success");
+      window.fb_syncMyState();
+    };
+
     window.evaluatePool = function() {
       const counts = {}; let maxFreq = 0;
       window.state.displayPool.forEach(id => { counts[id] = (counts[id] || 0) + 1; if (counts[id] > maxFreq) maxFreq = counts[id]; });
@@ -764,12 +790,7 @@
       });
 
       if (window.state.turnCount >= MAX_TURNS) {
-        document.getElementById('result-score').innerText = window.state.money;
-        const res = document.getElementById('result-text');
-        if(window.state.money < 5000) res.innerText = "평범한 상인 🛒";
-        else if(window.state.money < 15000) res.innerText = "성공한 사업가 💼";
-        else res.innerText = "하늘 섬의 만수르 💎";
-        window.showScreen('screen-result'); return;
+        window.endGame(); return;
       }
       
       window.state.turnCount++; window.renderAll(); window.fb_syncMyState(); window.fb_syncGlobalState();
@@ -793,15 +814,31 @@
       window.state.market = {};
       SELLABLE_ITEMS.forEach(id => { window.state.market[id] = { currentPrice: TILES[id].basePrice, previousPrice: TILES[id].basePrice, trend: 0, supply: 0, pendingSupply: 0 }; });
       window.state.newsHistory = [{ turn: 1, msg: "시장이 개장되었습니다. 매각 시 다음 턴에 시세가 하락합니다.", type: "up" }];
-    }
+    };
 
-    // --- 멀티플레이 통신 (N-Player Sync) ---
-    function startSync(roomRef) {
+    window.endGame = function() {
+      document.getElementById('result-score').innerText = window.state.money;
+      const res = document.getElementById('result-text');
+      if(window.state.money < 5000) res.innerText = "평범한 상인 🛒";
+      else if(window.state.money < 15000) res.innerText = "성공한 사업가 💼";
+      else res.innerText = "하늘 섬의 만수르 💎";
+      if(window.unsubSnapshot) window.unsubSnapshot();
+      window.showScreen('screen-result');
+    };
+
+    window.cleanupAndLeave = async function() {
+      if (window.state.mode.startsWith('multi') && window.state.roomId && user && !isExternalMode) {
+         try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId)); } catch(e) {}
+      }
+      location.reload();
+    };
+
+    // --- Sync Logic ---
+    window.startSync = function(roomRef) {
       window.unsubSnapshot = onSnapshot(roomRef, (docSnap) => {
         if (!docSnap.exists()) return;
         const data = docSnap.data();
         
-        // 대기실 동기화
         if (data.status === 'waiting') {
            window.state.playerIds = data.playerIds;
            document.getElementById('waiting-players-list').innerHTML = data.playerIds.map(p => `<li>${p} ${p===window.state.myPlayerId?'<span class="text-xs text-indigo-400">(나)</span>':''} ${p===data.host?'👑':''}</li>`).join('');
@@ -810,7 +847,6 @@
            return;
         }
 
-        // 게임 시작 감지
         if (data.status === 'playing' && window.state.mode === 'multi-wait') {
            window.state.playerIds = Object.keys(data.playersData);
            window.initMultiPlayEnv(data);
@@ -819,26 +855,22 @@
 
         if (window.state.mode !== 'multi-play') return;
 
-        // 글로벌 상태 동기화
         if (data.turnCount > window.state.turnCount) {
            window.state.turnCount = data.turnCount; window.state.market = data.market; window.state.sharedPool = data.sharedPool; window.state.displayPool = data.displayPool;
            if(data.newsHistory) window.state.newsHistory = data.newsHistory;
            window.notify("턴이 갱신되었습니다.", "info");
         }
         
-        // 전체 플레이어 데이터 갱신 (나는 내 로컬 우선)
         window.state.playersData = data.playersData;
 
-        // 거래 시스템 동기화
         if (data.activeTrade) {
            window.state.activeTrade = data.activeTrade; window.renderTradeUI();
-           if (data.activeTrade.pAAccept && data.activeTrade.pBAccept && window.state.myPlayerId === data.activeTrade.pA) executeTradeInDB(roomRef, data);
+           if (data.activeTrade.pAAccept && data.activeTrade.pBAccept && window.state.myPlayerId === data.activeTrade.pA) window.executeTradeInDB(roomRef, data);
         } else {
            window.state.activeTrade = null;
            if(!document.getElementById('modal-trade').classList.contains('hidden')) window.renderTradeUI();
         }
 
-        // 채팅 및 귓속말 동기화
         if (data.chat && data.chat.length > window.state.chat.length) {
            const myChats = data.chat.filter(m => m.target === 'all' || m.target === window.state.myPlayerId || m.sender === window.state.myPlayerId);
            window.renderChat(myChats);
@@ -848,12 +880,12 @@
         }
         window.renderAll();
       }, (error) => console.error("Sync Error:", error));
-    }
+    };
 
     window.fb_syncMyState = async () => {
       if (!window.state.mode.startsWith('multi') || !user) return;
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
-      await updateDoc(roomRef, { [`playersData.${window.state.myPlayerId}`]: { money: window.state.money, prof: window.state.prof, stacks: serializeStacks(window.state.stacks) } });
+      await updateDoc(roomRef, { [`playersData.${window.state.myPlayerId}`]: { money: window.state.money, prof: window.state.prof, stacks: window.serializeStacks(window.state.stacks) } });
     };
 
     window.fb_syncGlobalState = async () => {
@@ -862,15 +894,15 @@
       await updateDoc(roomRef, { turnCount: window.state.turnCount, sharedPool: window.state.sharedPool, displayPool: window.state.displayPool, market: window.state.market, newsHistory: window.state.newsHistory });
     };
 
-    async function executeTradeInDB(roomRef, data) {
+    window.executeTradeInDB = async function(roomRef, data) {
        const tr = data.activeTrade;
        const pA_id = tr.pA; const pB_id = tr.pB;
        
        let pA_money = data.playersData[pA_id].money - tr.pAMoney + tr.pBMoney;
        let pB_money = data.playersData[pB_id].money - tr.pBMoney + tr.pAMoney;
        
-       const newPAStacks = removeItemsFromStacks(data.playersData[pA_id].stacks, tr.pAItems);
-       const newPBStacks = removeItemsFromStacks(data.playersData[pB_id].stacks, tr.pBItems);
+       const newPAStacks = window.removeItemsFromStacks(data.playersData[pA_id].stacks, tr.pAItems);
+       const newPBStacks = window.removeItemsFromStacks(data.playersData[pB_id].stacks, tr.pBItems);
        
        tr.pBItems.forEach((item, idx) => newPAStacks.push({ id: `t_${Date.now()}_${idx}`, xRatio: 0.5, yRatio: 0.5, cards: [item], crafting: null }));
        tr.pAItems.forEach((item, idx) => newPBStacks.push({ id: `t_${Date.now()}_${idx}`, xRatio: 0.5, yRatio: 0.5, cards: [item], crafting: null }));
@@ -883,7 +915,6 @@
        window.notify("거래 성사! 보드 중앙과 골드를 확인하세요 🎁", "success");
        window.state.localTradeOffer = { money: 0, items: [] };
        
-       // 만약 내가 거래자라면 내 로컬 상태 강제 업데이트
        if (window.state.myPlayerId === pA_id || window.state.myPlayerId === pB_id) {
            const myNewData = window.state.myPlayerId === pA_id ? {m: pA_money, s: newPAStacks} : {m: pB_money, s: newPBStacks};
            window.state.money = myNewData.m;
@@ -891,21 +922,21 @@
            window.state.stacks = myNewData.s.map(s => ({...s, x: s.xRatio * w, y: s.yRatio * h}));
            window.renderAll();
        }
-    }
+    };
 
-    function removeItemsFromStacks(stacks, itemsToRemove) {
+    window.removeItemsFromStacks = function(stacks, itemsToRemove) {
        let newStacks = JSON.parse(JSON.stringify(stacks)); let toRemove = [...itemsToRemove];
        for (let i = 0; i < toRemove.length; i++) {
            let item = toRemove[i];
            for (let s of newStacks) { let idx = s.cards.lastIndexOf(item); if (idx !== -1) { s.cards.splice(idx, 1); break; } }
        }
        return newStacks.filter(s => s.cards.length > 0);
-    }
+    };
 
-    function serializeStacks(stacks) {
+    window.serializeStacks = function(stacks) {
        const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
        return stacks.map(s => ({ xRatio: s.x / w, yRatio: s.y / h, cards: s.cards, crafting: s.crafting ? true : false }));
-    }
+    };
 
     // --- 드래그 이벤트 ---
     const boardArea = document.getElementById('board-area');
@@ -986,10 +1017,10 @@
       window.state.draggingStack = null; window.dragData = null; window.renderAll(); window.fb_syncMyState();
     });
 
-    // --- UI 그리기 ---
+    // --- 렌더링 ---
     window.renderAll = function() {
       document.getElementById('score').innerText = window.state.money;
-      if (window.state.mode === 'multi-play') {
+      if (window.state.mode.startsWith('multi')) {
          const currentTurnPlayer = window.state.playerIds[(window.state.turnCount - 1) % window.state.playerIds.length];
          const isMyTurn = (currentTurnPlayer === window.state.myPlayerId);
          document.getElementById('turn-status').innerText = isMyTurn ? "진행 턴 (내 차례!)" : `진행 턴 (${currentTurnPlayer} 대기중)`;
@@ -1061,8 +1092,15 @@
       document.getElementById('news-list').innerHTML = window.state.newsHistory.map(n => `<div class="flex flex-col bg-slate-50 p-3 rounded-2xl border border-slate-100 shadow-sm"><div class="flex items-center gap-2 mb-1"><span class="text-[10px] font-black text-white bg-slate-400 px-2 py-0.5 rounded-full">Turn ${n.turn}</span>${n.type === 'up' ? '<i class="ph-bold ph-trend-up text-emerald-500 text-lg"></i>' : n.type === 'down' ? '<i class="ph-bold ph-trend-down text-red-500 text-lg"></i>' : '<i class="ph-bold ph-minus text-slate-400 text-lg"></i>'}</div><p class="text-xs font-bold text-slate-700">${n.msg}</p></div>`).join('');
     };
 
-    // --- N인용 거래 시스템 UI 로직 ---
+    // --- Trade UI ---
+    window.toggleTradeModal = function() {
+      const m = document.getElementById('modal-trade');
+      if(m.classList.contains('hidden')) { m.classList.remove('hidden'); m.classList.add('flex'); window.renderTradeUI(); setTimeout(()=> { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10); } 
+      else { m.classList.add('opacity-0'); m.children[0].classList.add('scale-95'); setTimeout(()=> { m.classList.add('hidden'); m.classList.remove('flex'); }, 300); }
+    };
+
     window.renderTradeUI = function() {
+      if(document.getElementById('modal-trade').classList.contains('hidden')) return;
       const c = document.getElementById('trade-dynamic-content');
       
       if (!window.state.activeTrade) {
@@ -1085,7 +1123,6 @@
       const myTrade = isPA ? {money: tr.pAMoney, items: tr.pAItems, accept: tr.pAAccept} : {money: tr.pBMoney, items: tr.pBItems, accept: tr.pBAccept};
       const oppTrade = isPA ? {money: tr.pBMoney, items: tr.pBItems, accept: tr.pBAccept} : {money: tr.pAMoney, items: tr.pAItems, accept: tr.pAAccept};
 
-      // 내 인벤토리 필터링 (제안한 자원 제외)
       let inv = {}; window.state.stacks.forEach(s => s.cards.forEach(card => inv[card] = (inv[card]||0) + 1));
       myTrade.items.forEach(card => { if(inv[card]) inv[card]--; });
       const invHtml = Object.entries(inv).filter(([k,v])=>v>0).map(([k,v]) => `<div onclick="window.addToOffer('${k}')" class="px-2 py-1 bg-white border border-slate-200 rounded cursor-pointer hover:bg-sky-50 flex items-center gap-1 shadow-sm"><span class="${TILES[k].textColor}">${TILES[k].icon.replace('text-3xl','text-sm')}</span> <span class="text-[10px] font-bold text-slate-700">${TILES[k].name} x${v}</span></div>`).join('') || '<span class="text-[10px] text-slate-400">자원이 없습니다.</span>';
@@ -1153,7 +1190,7 @@
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
       await updateDoc(roomRef, {
          [`activeTrade.${isPA ? 'pAMoney' : 'pBMoney'}`]: newM,
-         'activeTrade.pAAccept': false, 'activeTrade.pBAccept': false // 조건 변경시 수락 취소
+         'activeTrade.pAAccept': false, 'activeTrade.pBAccept': false 
       });
     };
 
@@ -1183,13 +1220,12 @@
       await updateDoc(roomRef, { [`activeTrade.${isPA ? 'pAAccept' : 'pBAccept'}`]: true });
     };
 
-    window.sendChat = async function() {
-      const input = document.getElementById('chat-input'); const text = input.value.trim();
-      const target = document.getElementById('chat-target-select').value; // 귓속말 기능 추가
-      if (!text || window.state.mode !== 'multi-play' || !user) return;
-      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
-      await updateDoc(roomRef, { chat: arrayUnion({ sender: window.state.myPlayerId, target: target, msg: text, time: Date.now() }) });
-      input.value = '';
+    // --- Chat UI ---
+    window.toggleChat = function() {
+      const c = document.getElementById('chat-container'); const ic = document.getElementById('chat-icon');
+      window.state.isChatOpen = !window.state.isChatOpen;
+      if (window.state.isChatOpen) { c.classList.remove('chat-closed'); c.classList.add('chat-open'); ic.classList.replace('ph-caret-up', 'ph-caret-down'); document.getElementById('chat-unread').classList.add('hidden'); } 
+      else { c.classList.remove('chat-open'); c.classList.add('chat-closed'); ic.classList.replace('ph-caret-down', 'ph-caret-up'); }
     };
 
     window.renderChat = function(msgs) {
@@ -1201,6 +1237,23 @@
       }).join('');
       box.scrollTop = box.scrollHeight;
     };
+
+    window.sendChat = async function() {
+      const input = document.getElementById('chat-input'); const text = input.value.trim();
+      const target = document.getElementById('chat-target-select').value; 
+      if (!text || !window.state.mode.startsWith('multi') || !user) return;
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
+      await updateDoc(roomRef, { chat: arrayUnion({ sender: window.state.myPlayerId, target: target, msg: text, time: Date.now() }) });
+      input.value = '';
+    };
+
+    // --- Cleanup ---
+    window.addEventListener("beforeunload", (e) => {
+        if (window.state.mode.startsWith('multi') && window.state.roomId && user) {
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
+            deleteDoc(roomRef).catch(()=>{}); 
+        }
+    });
 
   </script>
 </body>
