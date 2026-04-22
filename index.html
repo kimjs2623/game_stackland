@@ -171,8 +171,9 @@
           <span class="text-xs font-black text-slate-600 mt-1">방: <span id="display-room-code" class="text-indigo-600"></span></span>
         </div>
         <!-- 거래 버튼 (멀티 전용) -->
-        <button id="btn-trade" onclick="window.toggleTradeModal()" class="hidden py-2 px-3 bg-purple-50 text-purple-700 rounded-xl font-black text-xs hover:bg-purple-100 transition-colors shadow-sm border border-purple-200 hover:scale-105 flex-col items-center justify-center">
+        <button id="btn-trade" onclick="window.toggleTradeModal()" class="hidden py-2 px-3 bg-purple-50 text-purple-700 rounded-xl font-black text-xs hover:bg-purple-100 transition-colors shadow-sm border border-purple-200 hover:scale-105 flex-col items-center justify-center relative">
           <i class="ph-bold ph-handshake text-lg mb-0.5"></i> 거래소
+          <span id="trade-notif-badge" class="absolute -top-1 -right-1 bg-red-500 text-white w-3 h-3 rounded-full hidden animate-ping"></span>
         </button>
         <button onclick="window.toggleNewsModal()" class="py-2 px-3 bg-amber-50 text-amber-600 rounded-xl font-black text-xs hover:bg-amber-100 transition-colors shadow-sm border border-amber-200 hover:scale-105 flex flex-col items-center justify-center">
           <i class="ph-bold ph-broadcast text-lg mb-0.5"></i> 뉴스
@@ -277,7 +278,7 @@
       </div>
       
       <!-- 거래 내용이 동적으로 렌더링될 컨테이너 -->
-      <div id="trade-dynamic-content" class="flex flex-col md:flex-row flex-1 overflow-hidden">
+      <div id="trade-dynamic-content" class="flex flex-col md:flex-row flex-1 overflow-hidden bg-white">
          <!-- JS 렌더링 -->
       </div>
     </div>
@@ -624,6 +625,7 @@
       const starts = ['wood', 'stone', 'seed', 'water', 'fire', 'villager'];
       starts.forEach((id, idx) => {
          const angle = (idx / starts.length) * Math.PI * 2; const r = 120;
+         // Assign temporary IDs, but real IDs will be assigned on deserialize
          initialStacks.push({ id: `s${idx}`, xRatio: (w/2 + Math.cos(angle)*r - 30)/w, yRatio: (h/2 + Math.sin(angle)*r - 50)/h, cards: [id], crafting: null });
       });
 
@@ -653,7 +655,7 @@
       
       const boardEl = document.getElementById('board-area');
       const w = boardEl.clientWidth || 800; const h = boardEl.clientHeight || 600;
-      window.state.stacks = myData.stacks.map(s => ({...s, x: s.xRatio * w, y: s.yRatio * h}));
+      window.state.stacks = myData.stacks.map(s => ({...s, id: s.id || `s${window.nextStackId++}`, x: s.xRatio * w, y: s.yRatio * h}));
 
       let opts = `<option value="me">내 영지 보기</option>`;
       window.state.playerIds.forEach(p => { if(p !== window.state.myPlayerId) opts += `<option value="${p}">${p} 영지 정찰</option>`; });
@@ -864,8 +866,25 @@
         window.state.playersData = data.playersData;
 
         if (data.activeTrade) {
-           window.state.activeTrade = data.activeTrade; window.renderTradeUI();
-           if (data.activeTrade.pAAccept && data.activeTrade.pBAccept && window.state.myPlayerId === data.activeTrade.pA) window.executeTradeInDB(roomRef, data);
+           const prevTrade = window.state.activeTrade;
+           window.state.activeTrade = data.activeTrade; 
+           
+           // 요청을 받은 쪽(pB) 화면에만 요청 팝업 띄우기
+           if (data.activeTrade.status === 'requested' && data.activeTrade.pB === window.state.myPlayerId && (!prevTrade || prevTrade.status !== 'requested')) {
+               const m = document.getElementById('modal-trade');
+               if(m.classList.contains('hidden')) { 
+                   m.classList.remove('hidden'); m.classList.add('flex'); 
+                   setTimeout(()=> { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10); 
+               }
+               window.notify(`${data.activeTrade.pA}님의 거래 요청이 도착했습니다!`, 'action');
+           }
+           
+           window.renderTradeUI();
+
+           // 거래 체결 검사 (pA 클라이언트 주도)
+           if (data.activeTrade.status === 'negotiating' && data.activeTrade.pAAccept && data.activeTrade.pBAccept && window.state.myPlayerId === data.activeTrade.pA) {
+               window.executeTradeInDB(roomRef, data);
+           }
         } else {
            window.state.activeTrade = null;
            if(!document.getElementById('modal-trade').classList.contains('hidden')) window.renderTradeUI();
@@ -875,7 +894,8 @@
            const myChats = data.chat.filter(m => m.target === 'all' || m.target === window.state.myPlayerId || m.sender === window.state.myPlayerId);
            window.renderChat(myChats);
            if (!window.state.isChatOpen && myChats.length > window.state.chat.length && myChats[myChats.length-1].sender !== window.state.myPlayerId) {
-               document.getElementById('chat-unread').classList.remove('hidden');
+               const badge = document.getElementById('chat-unread');
+               if(badge) badge.classList.remove('hidden');
            }
         }
         window.renderAll();
@@ -904,8 +924,8 @@
        const newPAStacks = window.removeItemsFromStacks(data.playersData[pA_id].stacks, tr.pAItems);
        const newPBStacks = window.removeItemsFromStacks(data.playersData[pB_id].stacks, tr.pBItems);
        
-       tr.pBItems.forEach((item, idx) => newPAStacks.push({ id: `t_${Date.now()}_${idx}`, xRatio: 0.5, yRatio: 0.5, cards: [item], crafting: null }));
-       tr.pAItems.forEach((item, idx) => newPBStacks.push({ id: `t_${Date.now()}_${idx}`, xRatio: 0.5, yRatio: 0.5, cards: [item], crafting: null }));
+       tr.pBItems.forEach((item, idx) => newPAStacks.push({ id: `t_${Date.now()}_${idx}_b`, xRatio: 0.5, yRatio: 0.5, cards: [item], crafting: null }));
+       tr.pAItems.forEach((item, idx) => newPBStacks.push({ id: `t_${Date.now()}_${idx}_a`, xRatio: 0.5, yRatio: 0.5, cards: [item], crafting: null }));
 
        await updateDoc(roomRef, {
            [`playersData.${pA_id}.money`]: pA_money, [`playersData.${pA_id}.stacks`]: newPAStacks,
@@ -919,7 +939,7 @@
            const myNewData = window.state.myPlayerId === pA_id ? {m: pA_money, s: newPAStacks} : {m: pB_money, s: newPBStacks};
            window.state.money = myNewData.m;
            const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
-           window.state.stacks = myNewData.s.map(s => ({...s, x: s.xRatio * w, y: s.yRatio * h}));
+           window.state.stacks = myNewData.s.map(s => ({...s, id: s.id, x: s.xRatio * w, y: s.yRatio * h}));
            window.renderAll();
        }
     };
@@ -935,7 +955,7 @@
 
     window.serializeStacks = function(stacks) {
        const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
-       return stacks.map(s => ({ xRatio: s.x / w, yRatio: s.y / h, cards: s.cards, crafting: s.crafting ? true : false }));
+       return stacks.map(s => ({ id: s.id, xRatio: s.x / w, yRatio: s.y / h, cards: s.cards, crafting: s.crafting }));
     };
 
     // --- 드래그 이벤트 ---
@@ -1017,7 +1037,7 @@
       window.state.draggingStack = null; window.dragData = null; window.renderAll(); window.fb_syncMyState();
     });
 
-    // --- 렌더링 ---
+    // --- UI 그리기 ---
     window.renderAll = function() {
       document.getElementById('score').innerText = window.state.money;
       if (window.state.mode.startsWith('multi')) {
@@ -1103,10 +1123,11 @@
       if(document.getElementById('modal-trade').classList.contains('hidden')) return;
       const c = document.getElementById('trade-dynamic-content');
       
+      // 1. 거래 진행 중이 아닐 때 (선택 화면)
       if (!window.state.activeTrade) {
          let opts = `<option value="">거래할 상대를 선택하세요</option>`;
          window.state.playerIds.forEach(p => { if (p !== window.state.myPlayerId) opts += `<option value="${p}">${p}</option>`; });
-         c.innerHTML = `<div class="p-8 w-full text-center flex flex-col items-center justify-center min-h-[300px]"><h3 class="text-xl font-black text-slate-700 mb-6">새로운 1:1 거래 시작하기</h3><select id="trade-target-sel" class="p-3 border-2 border-indigo-200 rounded-xl font-black text-indigo-700 mb-6 outline-none">${opts}</select><button onclick="window.initiateTrade()" class="bg-indigo-500 text-white font-black px-8 py-3 rounded-xl hover:bg-indigo-400 shadow-md">거래 세션 열기</button></div>`;
+         c.innerHTML = `<div class="p-8 w-full text-center flex flex-col items-center justify-center min-h-[300px]"><h3 class="text-xl font-black text-slate-700 mb-6">새로운 1:1 거래 시작하기</h3><select id="trade-target-sel" class="p-3 border-2 border-indigo-200 rounded-xl font-black text-indigo-700 mb-6 outline-none">${opts}</select><button onclick="window.initiateTrade()" class="bg-indigo-500 text-white font-black px-8 py-3 rounded-xl hover:bg-indigo-400 shadow-md">거래 요청 보내기</button></div>`;
          return;
       }
 
@@ -1114,11 +1135,23 @@
       const isPA = tr.pA === window.state.myPlayerId;
       const isPB = tr.pB === window.state.myPlayerId;
 
+      // 2. 다른 플레이어끼리 거래 중인 것을 관전할 때
       if (!isPA && !isPB) {
-         c.innerHTML = `<div class="p-8 w-full text-center text-slate-500 font-bold min-h-[300px] flex items-center justify-center">현재 ${tr.pA} 님과 ${tr.pB} 님이 거래 중입니다. <br>끝날 때까지 잠시 기다려 주세요.</div>`;
+         c.innerHTML = `<div class="p-8 w-full text-center text-slate-500 font-bold min-h-[300px] flex items-center justify-center">현재 ${tr.pA} 님과 ${tr.pB} 님이 거래를 진행/준비 중입니다.<br>끝날 때까지 잠시 기다려 주세요.</div>`;
          return;
       }
 
+      // 3. 거래 요청 대기 상태일 때
+      if (tr.status === 'requested') {
+          if (isPA) {
+              c.innerHTML = `<div class="p-8 w-full text-center flex flex-col items-center justify-center min-h-[300px]"><h3 class="text-xl font-black text-slate-700 mb-6">${tr.pB}님의 수락을 기다리는 중입니다... ⏳</h3><button onclick="window.cancelTrade()" class="bg-rose-500 text-white font-black px-8 py-3 rounded-xl hover:bg-rose-400 shadow-md">요청 취소</button></div>`;
+          } else {
+              c.innerHTML = `<div class="p-8 w-full text-center flex flex-col items-center justify-center min-h-[300px]"><h3 class="text-2xl font-black text-indigo-600 mb-2">🤝 거래 요청</h3><p class="text-slate-600 font-bold mb-6">${tr.pA}님이 1:1 거래를 요청했습니다.</p><div class="flex gap-4"><button onclick="window.acceptTradeRequest()" class="bg-indigo-500 text-white font-black px-8 py-3 rounded-xl hover:bg-indigo-400 shadow-md">수락</button><button onclick="window.cancelTrade()" class="bg-slate-300 text-slate-700 font-black px-8 py-3 rounded-xl hover:bg-slate-200 shadow-md">거절</button></div></div>`;
+          }
+          return;
+      }
+
+      // 4. 본격적인 거래(협상) 테이블
       const oppName = isPA ? tr.pB : tr.pA;
       const myTrade = isPA ? {money: tr.pAMoney, items: tr.pAItems, accept: tr.pAAccept} : {money: tr.pBMoney, items: tr.pBItems, accept: tr.pBAccept};
       const oppTrade = isPA ? {money: tr.pBMoney, items: tr.pBItems, accept: tr.pBAccept} : {money: tr.pAMoney, items: tr.pAItems, accept: tr.pAAccept};
@@ -1131,7 +1164,7 @@
 
       c.innerHTML = `
         <div class="flex-1 border-r border-slate-100 p-5 flex flex-col gap-4 overflow-y-auto custom-scroll relative">
-          <button onclick="window.cancelTrade()" class="absolute top-2 right-2 text-xs bg-slate-100 text-slate-500 font-bold px-2 py-1 rounded hover:bg-rose-100 hover:text-rose-600">거래 취소</button>
+          <button onclick="window.cancelTrade()" class="absolute top-2 right-2 text-xs bg-slate-100 text-slate-500 font-bold px-2 py-1 rounded hover:bg-rose-100 hover:text-rose-600">거래 파기</button>
           <h3 class="font-black text-sky-600 text-center bg-sky-50 py-1 rounded-lg">내가 줄 물건</h3>
           <div class="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-200">
             <span class="text-xs font-black text-slate-600">골드 제안</span>
@@ -1155,8 +1188,8 @@
           <div class="flex flex-wrap gap-2 p-3 bg-rose-50 rounded-xl border border-rose-200 min-h-[160px] content-start">${oppOfferHtml}</div>
           <div class="mt-auto flex flex-col gap-2">
              <div class="text-center text-[10px] font-bold text-slate-500">조건을 바꾸면 양측의 수락이 취소됩니다.</div>
-             <button onclick="window.acceptTrade()" class="py-3 ${myTrade.accept ? 'bg-slate-300 text-slate-500' : 'bg-purple-600 text-white hover:bg-purple-500'} font-black rounded-xl transition-colors shadow-md flex items-center justify-center gap-2">
-               <i class="ph-bold ${myTrade.accept ? 'ph-hourglass' : 'ph-check-circle'}"></i> ${myTrade.accept ? '상대방 수락 대기 중...' : '현재 조건으로 거래 수락'}
+             <button onclick="window.acceptTradeNegotiation()" class="py-3 ${myTrade.accept ? 'bg-slate-300 text-slate-500' : 'bg-purple-600 text-white hover:bg-purple-500'} font-black rounded-xl transition-colors shadow-md flex items-center justify-center gap-2">
+               <i class="ph-bold ${myTrade.accept ? 'ph-hourglass' : 'ph-check-circle'}"></i> ${myTrade.accept ? '상대방 최종 수락 대기 중...' : '현재 조건으로 거래 확정!'}
              </button>
           </div>
         </div>
@@ -1168,9 +1201,19 @@
       if(!sel || !sel.value) return window.notify("상대방을 선택하세요", "error");
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
       await updateDoc(roomRef, {
-          activeTrade: { pA: window.state.myPlayerId, pB: sel.value, pAMoney: 0, pAItems: [], pBMoney: 0, pBItems: [], pAAccept: false, pBAccept: false }
+          activeTrade: { status: 'requested', pA: window.state.myPlayerId, pB: sel.value }
       });
       window.state.localTradeOffer = { money: 0, items: [] };
+    };
+
+    window.acceptTradeRequest = async function() {
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
+      await updateDoc(roomRef, {
+          'activeTrade.status': 'negotiating',
+          'activeTrade.pAMoney': 0, 'activeTrade.pAItems': [],
+          'activeTrade.pBMoney': 0, 'activeTrade.pBItems': [],
+          'activeTrade.pAAccept': false, 'activeTrade.pBAccept': false
+      });
     };
 
     window.cancelTrade = async function() {
@@ -1214,7 +1257,7 @@
       });
     };
 
-    window.acceptTrade = async function() {
+    window.acceptTradeNegotiation = async function() {
       const isPA = window.state.activeTrade.pA === window.state.myPlayerId;
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
       await updateDoc(roomRef, { [`activeTrade.${isPA ? 'pAAccept' : 'pBAccept'}`]: true });
