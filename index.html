@@ -49,13 +49,6 @@
       transform: scale(1.05);
       box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
     }
-
-    .trade-zone-active {
-      border-color: #8b5cf6 !important;
-      background-color: #ede9fe !important;
-      transform: scale(1.05);
-      box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
-    }
     
     .price-up { color: #10b981; } 
     .price-down { color: #ef4444; } 
@@ -63,7 +56,7 @@
 
     /* 채팅창 애니메이션 */
     #chat-container { transition: height 0.3s ease-in-out; }
-    .chat-open { height: 300px !important; }
+    .chat-open { height: 320px !important; }
     .chat-closed { height: 40px !important; }
   </style>
 </head>
@@ -98,16 +91,34 @@
     <div class="bg-white border border-slate-200 w-full max-w-md rounded-[2rem] shadow-2xl flex flex-col transform scale-95 transition-transform overflow-hidden p-8" onclick="event.stopPropagation()">
       <h2 class="text-2xl font-black text-indigo-600 mb-6 text-center">멀티플레이 접속</h2>
       <div class="flex flex-col gap-4">
-        <button onclick="window.createRoom()" class="w-full py-4 bg-indigo-500 text-white font-black rounded-xl shadow-md hover:bg-indigo-400">새로운 방 만들기 (Player 1)</button>
+        <button onclick="window.createRoom()" class="w-full py-4 bg-indigo-500 text-white font-black rounded-xl shadow-md hover:bg-indigo-400">새로운 방 만들기 (방장)</button>
         <div class="relative flex items-center py-2">
           <div class="flex-grow border-t border-slate-200"></div><span class="flex-shrink-0 mx-4 text-slate-400 text-sm font-bold">또는</span><div class="flex-grow border-t border-slate-200"></div>
         </div>
         <div class="flex gap-2">
           <input type="text" id="room-code-input" placeholder="방 코드 (4자리)" class="flex-1 border-2 border-slate-200 rounded-xl px-4 font-black text-center text-lg uppercase focus:border-indigo-400 outline-none" maxlength="4">
-          <button onclick="window.joinRoom()" class="py-4 px-6 bg-slate-800 text-white font-black rounded-xl shadow-md hover:bg-slate-700">입장 (P2)</button>
+          <button onclick="window.joinRoom()" class="py-4 px-6 bg-slate-800 text-white font-black rounded-xl shadow-md hover:bg-slate-700">참여하기</button>
         </div>
       </div>
       <button onclick="window.hideLobby()" class="mt-6 text-slate-400 font-bold text-sm hover:text-slate-600">취소</button>
+    </div>
+  </div>
+
+  <!-- 대기실 화면 (멀티플레이 전용) -->
+  <div id="screen-waiting" class="absolute inset-0 flex flex-col items-center justify-center z-40 hidden opacity-0 transition-opacity duration-500">
+    <div class="bg-white/90 p-12 rounded-[3rem] backdrop-blur-xl border border-white shadow-2xl text-center max-w-lg w-full">
+       <h2 class="text-4xl font-black text-indigo-600 mb-2">대기실</h2>
+       <p class="text-slate-500 font-bold mb-6">초대 코드: <span id="waiting-room-code" class="text-indigo-500 text-3xl ml-2"></span></p>
+       <div class="bg-slate-50 rounded-2xl p-5 mb-6 text-left border border-slate-200 min-h-[150px]">
+          <h3 class="text-sm font-black text-slate-400 mb-3 border-b border-slate-200 pb-2">접속한 플레이어</h3>
+          <ul id="waiting-players-list" class="space-y-2 font-bold text-slate-700"></ul>
+       </div>
+       <div id="waiting-host-controls" class="hidden">
+          <button onclick="window.startMultiGame()" class="w-full py-4 bg-indigo-500 text-white font-black text-lg rounded-xl hover:bg-indigo-400 shadow-md transition-all hover:scale-105">게임 시작</button>
+       </div>
+       <div id="waiting-guest-controls" class="hidden">
+          <p class="text-amber-500 font-bold animate-pulse py-4 bg-amber-50 rounded-xl border border-amber-200">방장이 게임을 시작할 때까지 대기 중...</p>
+       </div>
     </div>
   </div>
 
@@ -159,7 +170,6 @@
           <span class="text-[10px] font-black text-indigo-400 uppercase bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">Multiplayer</span>
           <span class="text-xs font-black text-slate-600 mt-1">방: <span id="display-room-code" class="text-indigo-600"></span></span>
         </div>
-        <!-- 거래 버튼 (멀티 전용) -->
         <button id="btn-trade" onclick="window.toggleTradeModal()" class="hidden py-2 px-3 bg-purple-50 text-purple-700 rounded-xl font-black text-xs hover:bg-purple-100 transition-colors shadow-sm border border-purple-200 hover:scale-105 flex-col items-center justify-center">
           <i class="ph-bold ph-handshake text-lg mb-0.5"></i> 거래소
         </button>
@@ -182,11 +192,11 @@
         
         <!-- 상대방 영지 보고 있을 때 오버레이 -->
         <div id="opponent-overlay" class="absolute inset-0 bg-indigo-900/10 backdrop-blur-[2px] hidden items-end justify-center pb-12 z-[50]">
-           <button onclick="window.toggleOpponentView()" class="px-8 py-4 bg-indigo-600 text-white font-black text-lg rounded-full shadow-2xl hover:scale-105 transition-all flex items-center gap-2 border-4 border-indigo-400 animate-bounce">
+           <button onclick="window.changeViewPlayer('me')" class="px-8 py-4 bg-indigo-600 text-white font-black text-lg rounded-full shadow-2xl hover:scale-105 transition-all flex items-center gap-2 border-4 border-indigo-400 animate-bounce">
              <i class="ph-bold ph-arrow-u-up-left text-2xl"></i> 내 영지로 돌아가기
            </button>
            <div class="absolute top-6 right-6 bg-indigo-100 px-4 py-2 rounded-xl border-2 border-indigo-300 shadow-lg">
-             <span class="text-xs font-black text-indigo-800">상대방의 수익: <span id="overlay-opp-score" class="text-indigo-600 text-lg ml-1">0</span> G</span>
+             <span class="text-xs font-black text-indigo-800">이 영지의 수익: <span id="overlay-opp-score" class="text-indigo-600 text-lg ml-1">0</span> G</span>
            </div>
         </div>
         
@@ -199,11 +209,12 @@
 
       <!-- 오른쪽: 패널 -->
       <div class="w-72 bg-white/70 rounded-[3rem] border border-white shadow-xl backdrop-blur-xl p-4 flex flex-col h-full relative z-20">
-        <!-- 상대방 영지 정찰 -->
-        <div id="opponent-panel" class="mb-3 shrink-0 hidden">
-          <button onclick="window.toggleOpponentView()" class="w-full py-3 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border border-indigo-300 rounded-2xl font-black text-sm flex items-center justify-center gap-2 shadow-sm transition-all hover:-translate-y-0.5">
-            <i class="ph-bold ph-binoculars text-lg"></i> 상대방 영지 정찰
-          </button>
+        <!-- 상대방 영지 정찰 (N인용 드롭다운) -->
+        <div id="opponent-panel" class="mb-3 shrink-0 hidden flex-col gap-1">
+          <label class="text-[10px] font-black text-indigo-600 ml-1"><i class="ph-bold ph-binoculars"></i> 영지 정찰</label>
+          <select id="view-player-select" onchange="window.changeViewPlayer(this.value)" class="w-full py-2 px-3 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl font-black text-xs outline-none cursor-pointer">
+             <!-- JS 렌더링 -->
+          </select>
         </div>
 
         <!-- 숙련도 -->
@@ -241,6 +252,13 @@
           <span class="flex items-center gap-2"><i class="ph-bold ph-chat-circle-dots text-lg"></i> 라운지 채팅 <span id="chat-unread" class="bg-red-500 text-white rounded-full px-2 py-0.5 text-[10px] hidden">New</span></span>
           <i class="ph-bold ph-caret-up" id="chat-icon"></i>
        </div>
+       <!-- 귓속말 대상 선택 -->
+       <div class="flex items-center gap-2 p-1.5 bg-indigo-50 border-b border-indigo-100 shrink-0 px-3">
+          <span class="text-[10px] font-black text-indigo-400">To:</span>
+          <select id="chat-target-select" class="text-xs bg-transparent outline-none font-bold text-indigo-700 flex-1 cursor-pointer">
+             <option value="all">전체에게</option>
+          </select>
+       </div>
        <div id="chat-messages" class="flex-1 overflow-y-auto p-3 space-y-2 bg-slate-50 text-xs custom-scroll"></div>
        <div class="p-2 bg-white border-t border-slate-100 flex gap-2 shrink-0">
           <input type="text" id="chat-input" class="flex-1 border rounded-lg px-2 py-1 outline-none text-xs focus:border-indigo-400" onkeypress="if(event.key==='Enter') window.sendChat()" placeholder="메시지 입력...">
@@ -251,55 +269,15 @@
 
   <!-- 거래 시스템 모달 -->
   <div id="modal-trade" class="fixed inset-0 z-[300] hidden flex-col items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 opacity-0 transition-opacity" onclick="window.toggleTradeModal()">
-    <div class="bg-white border border-slate-200 w-full max-w-3xl rounded-[2rem] shadow-2xl flex flex-col transform scale-95 transition-transform overflow-hidden" style="max-height: 90vh;" onclick="event.stopPropagation()">
+    <div class="bg-white border border-slate-200 w-full max-w-4xl rounded-[2rem] shadow-2xl flex flex-col transform scale-95 transition-transform overflow-hidden" style="max-height: 90vh;" onclick="event.stopPropagation()">
       <div class="p-5 pb-3 border-b border-slate-100 shrink-0 bg-purple-50 flex justify-between items-center">
         <h2 class="text-xl font-black text-purple-700 flex items-center gap-2"><i class="ph-bold ph-handshake"></i> 플레이어 간 거래</h2>
         <button onclick="window.toggleTradeModal()" class="text-slate-400 hover:text-slate-700"><i class="ph-bold ph-x text-2xl"></i></button>
       </div>
       
-      <div class="flex flex-col md:flex-row flex-1 overflow-hidden">
-        <!-- 내 제안 -->
-        <div class="flex-1 border-r border-slate-100 p-5 flex flex-col gap-4 overflow-y-auto custom-scroll">
-          <h3 class="font-black text-sky-600 text-center bg-sky-50 py-1 rounded-lg">내가 줄 물건 (제안)</h3>
-          
-          <div class="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-200">
-            <span class="text-xs font-black text-slate-600">골드 제안</span>
-            <div class="flex items-center gap-2">
-              <button onclick="window.adjTradeMoney(-100)" class="px-2 py-0.5 bg-slate-200 rounded text-xs font-bold">-100</button>
-              <span class="font-black text-amber-500 w-12 text-center" id="trade-my-money">0 G</span>
-              <button onclick="window.adjTradeMoney(100)" class="px-2 py-0.5 bg-slate-200 rounded text-xs font-bold">+100</button>
-            </div>
-          </div>
-          
-          <!-- 인벤토리에서 선택 -->
-          <div class="text-xs font-black text-slate-500 mt-2">내 영지의 자원 (클릭하여 추가)</div>
-          <div id="trade-my-inventory" class="flex flex-wrap gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200 min-h-[60px]"></div>
-
-          <!-- 제안 목록 -->
-          <div class="text-xs font-black text-sky-500 mt-2">현재 제안 품목 (클릭하여 빼기)</div>
-          <div id="trade-my-offer" class="flex flex-wrap gap-2 p-3 bg-sky-50 rounded-xl border border-sky-200 min-h-[80px]"></div>
-          
-          <button onclick="window.proposeTrade()" class="mt-auto py-3 bg-sky-500 text-white font-black rounded-xl hover:bg-sky-400 transition-colors shadow-md">내 제안 확정하기</button>
-        </div>
-
-        <!-- 상대방 제안 -->
-        <div class="flex-1 p-5 flex flex-col gap-4 overflow-y-auto custom-scroll">
-          <h3 class="font-black text-rose-600 text-center bg-rose-50 py-1 rounded-lg">상대방이 줄 물건</h3>
-          
-          <div class="flex items-center justify-center bg-slate-50 p-2 rounded-xl border border-slate-200 mt-1">
-            <span class="font-black text-amber-500 text-lg" id="trade-opp-money">0 G</span>
-          </div>
-
-          <div class="text-xs font-black text-rose-500 mt-2">상대방 제안 품목</div>
-          <div id="trade-opp-offer" class="flex flex-wrap gap-2 p-3 bg-rose-50 rounded-xl border border-rose-200 min-h-[160px] content-start"></div>
-
-          <div class="mt-auto flex flex-col gap-2">
-             <div id="trade-status-text" class="text-center text-xs font-bold text-slate-500">양측이 수락하면 거래가 성사됩니다.</div>
-             <button id="btn-accept-trade" onclick="window.acceptTrade()" class="py-3 bg-purple-600 text-white font-black rounded-xl hover:bg-purple-500 transition-colors shadow-md flex items-center justify-center gap-2">
-               <i class="ph-bold ph-check-circle"></i> 현재 조건으로 거래 수락
-             </button>
-          </div>
-        </div>
+      <!-- 거래 내용이 동적으로 렌더링될 컨테이너 -->
+      <div id="trade-dynamic-content" class="flex flex-col md:flex-row flex-1 overflow-hidden">
+         <!-- JS 렌더링 -->
       </div>
     </div>
   </div>
@@ -316,7 +294,7 @@
   <div id="screen-result" class="absolute inset-0 bg-white/95 z-50 hidden opacity-0 flex-col items-center justify-center p-8 backdrop-blur-2xl transition-opacity duration-1000">
     <h2 class="text-6xl md:text-7xl font-black text-sky-600 mb-6 drop-shadow-md">시장 마감!</h2>
     <div class="bg-amber-50 p-16 rounded-[4rem] shadow-2xl border-4 border-amber-200 text-center mb-10 w-full max-w-2xl">
-       <div class="text-amber-700 text-xl font-black mb-4 bg-amber-200 px-6 py-2 rounded-full inline-block">최종 수익</div>
+       <div class="text-amber-700 text-xl font-black mb-4 bg-amber-200 px-6 py-2 rounded-full inline-block">내 최종 수익</div>
        <div class="flex items-center justify-center gap-4 mt-4">
          <div id="result-score" class="text-9xl font-black text-slate-800">0</div><i class="ph-fill ph-coin text-7xl text-amber-400"></i>
        </div>
@@ -359,11 +337,13 @@
 
     // --- Firebase Init ---
     let firebaseConfig;
+    let isExternalMode = false;
+
     try { 
-      if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+      if (typeof __firebase_config !== 'undefined') {
         firebaseConfig = JSON.parse(__firebase_config); 
       } else {
-        // 제공해주신 깃허브 등 외부 호스팅용 Firebase 설정 적용
+        isExternalMode = true;
         firebaseConfig = {
           apiKey: "AIzaSyDfItNnUuQ4wf6g8QPLiyXcjhXYEavRsKA",
           authDomain: "game-stackland.firebaseapp.com",
@@ -374,40 +354,36 @@
           measurementId: "G-4GPBGX5K4R"
         };
       }
-    } catch(e) { 
-      firebaseConfig = {
-        apiKey: "AIzaSyDfItNnUuQ4wf6g8QPLiyXcjhXYEavRsKA",
-        authDomain: "game-stackland.firebaseapp.com",
-        projectId: "game-stackland",
-        storageBucket: "game-stackland.firebasestorage.app",
-        messagingSenderId: "684632891695",
-        appId: "1:684632891695:web:5b186f9f5b0a108888c1da",
-        measurementId: "G-4GPBGX5K4R"
-      }; 
-    }
+    } catch(e) { }
+
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'sky-tycoon-external';
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    let user = null;
+    let db, auth, user = null;
+    let isFirebaseReady = false;
 
-    const initAuth = async () => {
+    async function initFirebase() {
+        if (isExternalMode && (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("YOUR_API_KEY_HERE"))) {
+            console.log("Firebase API 키 누락됨.");
+            return; 
+        }
         try {
+            const app = initializeApp(firebaseConfig); 
+            auth = getAuth(app); 
+            db = getFirestore(app);
+            
+            onAuthStateChanged(auth, (u) => { 
+                user = u; 
+                isFirebaseReady = true; 
+            });
+            
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 await signInWithCustomToken(auth, __initial_auth_token);
             } else {
                 await signInAnonymously(auth);
             }
-        } catch(e) { 
-            console.warn("Firebase Auth Error:", e); 
-        }
-    };
-    initAuth();
-
-    onAuthStateChanged(auth, (u) => { 
-        user = u; 
-    });
+        } catch(e) { console.warn("Firebase Auth Error", e); }
+    }
+    initFirebase();
 
     // --- Data ---
     const TILES = {
@@ -488,13 +464,16 @@
 
     // --- State ---
     window.state = {
-      mode: 'single', roomId: null, myPlayerId: 'p1', turnCount: 1, money: 0, stacks: [], sharedPool: [], displayPool: [], draggingStack: null, market: {}, newsHistory: [], unlockedSpecialty: null, oppData: null, viewingOpponent: false,
+      mode: 'single', roomId: null, myPlayerId: null, turnCount: 1, money: 0, stacks: [], sharedPool: [], displayPool: [], draggingStack: null, market: {}, newsHistory: [], unlockedSpecialty: null, 
+      playerIds: [], playersData: {}, viewingOpponent: false, viewingPlayerId: null, // N인용 관찰 및 턴 관리
       prof: { farming: { lv: 1, exp: 0 }, mining: { lv: 1, exp: 0 }, woodcraft: { lv: 1, exp: 0 }, cooking: { lv: 1, exp: 0 }, smithing: { lv: 1, exp: 0 } },
-      chat: [], isChatOpen: false, trade: { isActive: false, p1: {money:0, items:[], accept:false}, p2: {money:0, items:[], accept:false} }, localTradeOffer: { money: 0, items: [] }
+      chat: [], isChatOpen: false, 
+      activeTrade: null, localTradeOffer: { money: 0, items: [] } // N인용 1:1 거래 세션 관리
     };
+    
     window.nextStackId = 1; let unsubSnapshot = null; window.dragData = null;
 
-    // --- Helpers ---
+    // --- UI Helpers ---
     window.notify = function(msg, type = 'info') {
       const container = document.getElementById('notif-container');
       if (!container) return;
@@ -507,7 +486,7 @@
     };
 
     window.showScreen = function(id) {
-      ['screen-menu', 'screen-game', 'screen-result'].forEach(s => {
+      ['screen-menu', 'screen-waiting', 'screen-game', 'screen-result'].forEach(s => {
         const el = document.getElementById(s);
         if(el) { el.classList.add('hidden'); el.classList.remove('opacity-100'); el.classList.add('opacity-0'); }
       });
@@ -518,6 +497,7 @@
       }
     };
 
+    // --- 모달 토글들 ---
     window.toggleRecipeModal = function() {
       const m = document.getElementById('modal-recipe');
       if (m.classList.contains('hidden')) { m.classList.remove('hidden'); m.classList.add('flex'); window.renderRecipeList(); setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10); }
@@ -528,16 +508,6 @@
       const m = document.getElementById('modal-news');
       if (m.classList.contains('hidden')) { m.classList.remove('hidden'); m.classList.add('flex'); window.renderNewsList(); setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10); }
       else { m.classList.add('opacity-0'); m.children[0].classList.add('scale-95'); setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300); }
-    };
-
-    window.toggleOpponentView = function() {
-      if (window.state.mode !== 'multi') return;
-      if (!window.state.oppData) return window.notify("상대방의 데이터가 동기화되지 않았습니다.", "info");
-      window.state.viewingOpponent = !window.state.viewingOpponent;
-      const overlay = document.getElementById('opponent-overlay');
-      if (window.state.viewingOpponent) { overlay.classList.remove('hidden'); overlay.classList.add('flex'); document.getElementById('overlay-opp-score').innerText = window.state.oppData.money; }
-      else { overlay.classList.add('hidden'); overlay.classList.remove('flex'); }
-      window.renderAll();
     };
 
     window.showNewsSplash = function(title, msg, type) {
@@ -551,6 +521,7 @@
       setTimeout(() => { s.classList.add('opacity-0'); c.classList.add('scale-90'); setTimeout(() => s.classList.add('hidden'), 500); }, 3500);
     };
 
+    // 툴팁
     window.showTooltip = function(id, e) {
       if (window.state.draggingStack || window.state.viewingOpponent) return;
       const rel = RECIPES.filter(r => (!r.isSpecialty || r.unlockId === window.state.unlockedSpecialty) && (r.inputs.includes(id) || r.results.includes(id)));
@@ -581,77 +552,119 @@
       setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
     };
 
+    // --- N인용 대기실/방 생성/참가 ---
     window.createRoom = async function() {
-      if (!user) return window.notify("서버 연결을 준비 중입니다. 1~2초 후 다시 시도해주세요.", "error");
+      if (!isFirebaseReady || !user) return window.notify("서버 연결 중입니다. 잠시 후 다시 시도해주세요.", "error");
       
-      window.state.mode = 'multi'; window.state.myPlayerId = 'p1';
+      window.state.myPlayerId = 'Player 1';
+      window.state.mode = 'multi-wait';
       window.state.roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
       
-      window.hideLobby(); window.initGame(); 
+      window.hideLobby(); window.showScreen('screen-waiting');
+      document.getElementById('waiting-room-code').innerText = window.state.roomId;
+      
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
       await setDoc(roomRef, {
-        turnCount: window.state.turnCount, sharedPool: window.state.sharedPool, displayPool: window.state.displayPool, market: window.state.market, newsHistory: window.state.newsHistory,
-        p1: { money: window.state.money, prof: window.state.prof, stacks: serializeStacks(window.state.stacks) },
-        p2: null, chat: [], trade: { isActive: true, p1: {money:0, items:[], accept:false}, p2: {money:0, items:[], accept:false} }
+        status: 'waiting', host: 'Player 1', playerIds: ['Player 1'], chat: []
       });
       startSync(roomRef);
     };
 
     window.joinRoom = async function() {
-      if (!user) return window.notify("서버 연결을 준비 중입니다. 1~2초 후 다시 시도해주세요.", "error");
+      if (!isFirebaseReady || !user) return window.notify("서버 연결 중입니다. 잠시 후 다시 시도해주세요.", "error");
       const code = document.getElementById('room-code-input').value.toUpperCase();
       if(code.length !== 4) return window.notify('4자리 코드를 입력하세요.', 'error');
       
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
       const snap = await getDoc(roomRef);
       if(!snap.exists()) return window.notify('존재하지 않는 방입니다.', 'error');
-
-      window.state.mode = 'multi'; window.state.myPlayerId = 'p2'; window.state.roomId = code;
       const data = snap.data();
-      window.state.turnCount = data.turnCount; window.state.sharedPool = data.sharedPool; window.state.displayPool = data.displayPool; window.state.market = data.market; window.state.newsHistory = data.newsHistory || [];
-      window.state.money = 0; window.state.stacks = []; window.state.prof = { farming: {lv:1,exp:0}, mining: {lv:1,exp:0}, woodcraft: {lv:1,exp:0}, cooking: {lv:1,exp:0}, smithing: {lv:1,exp:0} };
+      if(data.status !== 'waiting') return window.notify('이미 게임이 진행 중인 방입니다.', 'error');
+
+      const myId = `Player ${data.playerIds.length + 1}`;
+      window.state.myPlayerId = myId;
+      window.state.mode = 'multi-wait';
+      window.state.roomId = code;
       
-      spawnInitialResources(); window.hideLobby(); window.showScreen('screen-game');
+      window.hideLobby(); window.showScreen('screen-waiting');
+      document.getElementById('waiting-room-code').innerText = window.state.roomId;
+
+      await updateDoc(roomRef, { playerIds: arrayUnion(myId) });
+      startSync(roomRef); 
+    };
+
+    // 방장이 게임 시작 버튼 누름
+    window.startMultiGame = async function() {
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
+      
+      // 초기 자원 세팅 생성
+      const initialStacks = [];
+      const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
+      const starts = ['wood', 'stone', 'seed', 'water', 'fire', 'villager'];
+      starts.forEach((id, idx) => {
+         const angle = (idx / starts.length) * Math.PI * 2; const r = 120;
+         initialStacks.push({ id: `s${idx}`, xRatio: (w/2 + Math.cos(angle)*r - 30)/w, yRatio: (h/2 + Math.sin(angle)*r - 50)/h, cards: [id], crafting: null });
+      });
+
+      const playersData = {};
+      window.state.playerIds.forEach(pid => {
+         playersData[pid] = { money: 0, prof: { farming: {lv:1,exp:0}, mining: {lv:1,exp:0}, woodcraft: {lv:1,exp:0}, cooking: {lv:1,exp:0}, smithing: {lv:1,exp:0} }, stacks: initialStacks };
+      });
+
+      window.initMarket();
+      const poolItems = ['wood', 'stone', 'seed', 'water', 'fire'];
+      const fullPool = Array.from({length: 200}, () => poolItems[Math.floor(Math.random() * poolItems.length)]);
+      
+      await updateDoc(roomRef, {
+         status: 'playing', turnCount: 1, playersData: playersData, 
+         sharedPool: fullPool.slice(4), displayPool: fullPool.slice(0, 4), market: window.state.market, newsHistory: window.state.newsHistory,
+         activeTrade: null // N인용 단일 거래 세션
+      });
+    };
+
+    // 로컬 게임 초기화 (멀티 게임 시작 시 호출됨)
+    window.initMultiPlayEnv = function(data) {
+      window.state.mode = 'multi-play';
+      window.state.turnCount = data.turnCount; window.state.market = data.market; window.state.sharedPool = data.sharedPool; window.state.displayPool = data.displayPool; window.state.newsHistory = data.newsHistory || [];
+      window.state.playersData = data.playersData;
+      
+      const myData = data.playersData[window.state.myPlayerId];
+      window.state.money = myData.money; window.state.prof = myData.prof; 
+      
+      const boardEl = document.getElementById('board-area');
+      const w = boardEl.clientWidth || 800; const h = boardEl.clientHeight || 600;
+      window.state.stacks = myData.stacks.map(s => ({...s, x: s.xRatio * w, y: s.yRatio * h}));
+
+      // 상대방 정찰 드롭다운 셋팅
+      let opts = `<option value="me">내 영지 보기</option>`;
+      window.state.playerIds.forEach(p => { if(p !== window.state.myPlayerId) opts += `<option value="${p}">${p} 영지 정찰</option>`; });
+      document.getElementById('view-player-select').innerHTML = opts;
+
+      // 채팅 귓속말 대상 셋팅
+      let chatOpts = `<option value="all">전체에게</option>`;
+      window.state.playerIds.forEach(p => { if(p !== window.state.myPlayerId) chatOpts += `<option value="${p}">${p}에게 귓속말</option>`; });
+      document.getElementById('chat-target-select').innerHTML = chatOpts;
+
+      window.showScreen('screen-game');
       document.getElementById('room-info').classList.remove('hidden'); document.getElementById('room-info').classList.add('flex');
       document.getElementById('display-room-code').innerText = window.state.roomId;
       document.getElementById('btn-trade').classList.remove('hidden'); document.getElementById('btn-trade').classList.add('flex');
       document.getElementById('chat-container').classList.remove('hidden');
+      document.getElementById('opponent-panel').classList.remove('hidden'); document.getElementById('opponent-panel').classList.add('flex');
 
-      await setDoc(roomRef, { p2: { money: window.state.money, prof: window.state.prof, stacks: serializeStacks(window.state.stacks) } }, { merge: true });
-      startSync(roomRef); window.showSpecialtySelector();
+      window.showSpecialtySelector();
+      window.renderAll();
     };
 
-    window.cleanupAndLeave = async function() {
-      if (window.state.mode === 'multi' && window.state.roomId && user) {
-         try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId)); } catch(e) {}
-      }
-      location.reload();
-    };
-
+    // (싱글 전용)
     window.initGame = function() {
       window.state.turnCount = 1; window.state.money = 0; window.state.stacks = []; window.nextStackId = 1; window.state.viewingOpponent = false;
       window.state.prof = { farming: {lv:1,exp:0}, mining: {lv:1,exp:0}, woodcraft: {lv:1,exp:0}, cooking: {lv:1,exp:0}, smithing: {lv:1,exp:0} };
-      
-      window.state.market = {};
-      SELLABLE_ITEMS.forEach(id => { window.state.market[id] = { currentPrice: TILES[id].basePrice, previousPrice: TILES[id].basePrice, trend: 0, supply: 0, pendingSupply: 0 }; });
-      window.state.newsHistory = [{ turn: 1, msg: "시장이 개장되었습니다. 매각 시 다음 턴에 시세가 하락합니다.", type: "up" }];
-
+      window.initMarket();
       const poolItems = ['wood', 'stone', 'seed', 'water', 'fire'];
       const fullPool = Array.from({length: 200}, () => poolItems[Math.floor(Math.random() * poolItems.length)]);
       window.state.sharedPool = fullPool.slice(4); window.state.displayPool = fullPool.slice(0, 4);
 
-      spawnInitialResources(); window.evaluatePool(); window.renderAll(); window.showScreen('screen-game');
-      
-      if (window.state.mode === 'multi') {
-        document.getElementById('room-info').classList.remove('hidden'); document.getElementById('room-info').classList.add('flex');
-        document.getElementById('display-room-code').innerText = window.state.roomId;
-        document.getElementById('btn-trade').classList.remove('hidden'); document.getElementById('btn-trade').classList.add('flex');
-        document.getElementById('chat-container').classList.remove('hidden');
-      }
-      window.showSpecialtySelector();
-    };
-
-    function spawnInitialResources() {
       const boardEl = document.getElementById('board-area');
       const w = boardEl.clientWidth || window.innerWidth/2; const h = boardEl.clientHeight || window.innerHeight/2;
       const cx = w / 2; const cy = h / 2;
@@ -660,28 +673,28 @@
          const angle = (idx / starts.length) * Math.PI * 2; const r = 120;
          window.state.stacks.push({ id: `s${window.nextStackId++}`, x: cx + Math.cos(angle)*r - 30, y: cy + Math.sin(angle)*r - 50, cards: [id], crafting: null });
       });
-    }
 
-    window.showSpecialtySelector = function() {
-      const m = document.getElementById('modal-specialty'); const c = document.getElementById('specialty-options');
-      c.innerHTML = SPECIALTY_OPTIONS.map(opt => `
-        <div onclick="window.selectSpecialty('${opt.id}')" class="bg-slate-800/80 hover:bg-slate-700/90 border-2 border-slate-600 hover:border-amber-400 p-8 rounded-3xl cursor-pointer transition-all transform hover:-translate-y-2 flex flex-col items-center shadow-xl group">
-          ${opt.icon} <h3 class="text-2xl font-black text-amber-300 mb-2 group-hover:text-amber-200">${opt.name}</h3>
-          <p class="text-slate-300 text-sm font-bold text-center leading-relaxed">${opt.desc}</p>
-        </div>`).join('');
-      m.classList.remove('hidden'); m.classList.add('flex');
-      setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10);
+      window.evaluatePool(); window.renderAll(); window.showScreen('screen-game');
+      window.showSpecialtySelector();
     };
 
-    window.selectSpecialty = function(id) {
-      window.state.unlockedSpecialty = id;
-      const modal = document.getElementById('modal-specialty');
-      modal.classList.add('opacity-0'); modal.children[0].classList.add('scale-95');
-      setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
-      window.notify(`${SPECIALTY_OPTIONS.find(o=>o.id===id).name} 레시피가 해금되었습니다!`, "success");
-      syncMyState();
+    // --- 멀티플레이 턴 관리 및 N인용 관찰 ---
+    window.changeViewPlayer = function(pid) {
+       window.state.viewingOpponent = (pid !== 'me');
+       window.state.viewingPlayerId = pid === 'me' ? null : pid;
+       
+       const overlay = document.getElementById('opponent-overlay');
+       if (window.state.viewingOpponent) { 
+           overlay.classList.remove('hidden'); overlay.classList.add('flex'); 
+           document.getElementById('overlay-opp-score').innerText = window.state.playersData[pid].money; 
+       } else { 
+           overlay.classList.add('hidden'); overlay.classList.remove('flex'); 
+           document.getElementById('view-player-select').value = 'me';
+       }
+       window.renderAll();
     };
 
+    // --- 진행 로직 ---
     window.evaluatePool = function() {
       const counts = {}; let maxFreq = 0;
       window.state.displayPool.forEach(id => { counts[id] = (counts[id] || 0) + 1; if (counts[id] > maxFreq) maxFreq = counts[id]; });
@@ -695,13 +708,13 @@
       if (window.state.viewingOpponent) return;
       window.state.displayPool = window.state.displayPool.map(() => window.state.sharedPool.shift() || 'wood');
       window.notify("선택지를 초기화했습니다 🔄", "action");
-      window.evaluatePool(); window.renderAll(); syncGlobalState();
+      window.evaluatePool(); window.renderAll(); window.fb_syncGlobalState();
     };
 
     window.handlePoolClick = function(poolIdx) {
-      if (window.state.mode === 'multi') {
-         const isP1Turn = window.state.turnCount % 2 !== 0;
-         if ((window.state.myPlayerId === 'p1' && !isP1Turn) || (window.state.myPlayerId === 'p2' && isP1Turn)) return window.notify("상대방의 턴입니다. 내 영지 정리만 가능합니다.", "error");
+      if (window.state.mode.startsWith('multi')) {
+         const currentTurnPlayer = window.state.playerIds[(window.state.turnCount - 1) % window.state.playerIds.length];
+         if (window.state.myPlayerId !== currentTurnPlayer) return window.notify("상대방의 턴입니다. 내 영지 정리만 가능합니다.", "error");
       }
       if (window.state.viewingOpponent) return window.notify("내 영지로 돌아와주세요.", "error");
 
@@ -759,7 +772,7 @@
         window.showScreen('screen-result'); return;
       }
       
-      window.state.turnCount++; window.renderAll(); syncMyState(); syncGlobalState();
+      window.state.turnCount++; window.renderAll(); window.fb_syncMyState(); window.fb_syncGlobalState();
     };
 
     window.checkAndSetRecipe = function(stack) {
@@ -776,64 +789,108 @@
       return cat && window.state.prof[cat] ? Math.floor(base * (1 + (window.state.prof[cat].lv - 1) * 0.15)) : base;
     };
 
-    // --- 멀티플레이 통신 ---
+    window.initMarket = function() {
+      window.state.market = {};
+      SELLABLE_ITEMS.forEach(id => { window.state.market[id] = { currentPrice: TILES[id].basePrice, previousPrice: TILES[id].basePrice, trend: 0, supply: 0, pendingSupply: 0 }; });
+      window.state.newsHistory = [{ turn: 1, msg: "시장이 개장되었습니다. 매각 시 다음 턴에 시세가 하락합니다.", type: "up" }];
+    }
+
+    // --- 멀티플레이 통신 (N-Player Sync) ---
     function startSync(roomRef) {
       window.unsubSnapshot = onSnapshot(roomRef, (docSnap) => {
         if (!docSnap.exists()) return;
         const data = docSnap.data();
         
+        // 대기실 동기화
+        if (data.status === 'waiting') {
+           window.state.playerIds = data.playerIds;
+           document.getElementById('waiting-players-list').innerHTML = data.playerIds.map(p => `<li>${p} ${p===window.state.myPlayerId?'<span class="text-xs text-indigo-400">(나)</span>':''} ${p===data.host?'👑':''}</li>`).join('');
+           if (window.state.myPlayerId === data.host) document.getElementById('waiting-host-controls').classList.remove('hidden');
+           else document.getElementById('waiting-guest-controls').classList.remove('hidden');
+           return;
+        }
+
+        // 게임 시작 감지
+        if (data.status === 'playing' && window.state.mode === 'multi-wait') {
+           window.state.playerIds = Object.keys(data.playersData);
+           window.initMultiPlayEnv(data);
+           return;
+        }
+
+        if (window.state.mode !== 'multi-play') return;
+
+        // 글로벌 상태 동기화
         if (data.turnCount > window.state.turnCount) {
            window.state.turnCount = data.turnCount; window.state.market = data.market; window.state.sharedPool = data.sharedPool; window.state.displayPool = data.displayPool;
            if(data.newsHistory) window.state.newsHistory = data.newsHistory;
            window.notify("턴이 갱신되었습니다.", "info");
         }
         
-        const oppId = window.state.myPlayerId === 'p1' ? 'p2' : 'p1';
-        if (data[oppId]) {
-          window.state.oppData = data[oppId];
-          document.getElementById('opponent-panel').classList.remove('hidden'); 
-          if(window.state.viewingOpponent) document.getElementById('overlay-opp-score').innerText = window.state.oppData.money;
+        // 전체 플레이어 데이터 갱신 (나는 내 로컬 우선)
+        window.state.playersData = data.playersData;
+
+        // 거래 시스템 동기화
+        if (data.activeTrade) {
+           window.state.activeTrade = data.activeTrade; window.renderTradeUI();
+           if (data.activeTrade.pAAccept && data.activeTrade.pBAccept && window.state.myPlayerId === data.activeTrade.pA) executeTradeInDB(roomRef, data);
+        } else {
+           window.state.activeTrade = null;
+           if(!document.getElementById('modal-trade').classList.contains('hidden')) window.renderTradeUI();
         }
 
-        if (data.trade) {
-           window.state.trade = data.trade; window.renderTradeUI();
-           if (data.trade.p1.accept && data.trade.p2.accept && window.state.myPlayerId === 'p1') executeTradeInDB(roomRef, data);
-        }
-
+        // 채팅 및 귓속말 동기화
         if (data.chat && data.chat.length > window.state.chat.length) {
-           window.renderChat(data.chat);
-           if (!window.state.isChatOpen && data.chat[data.chat.length-1].sender !== window.state.myPlayerId) document.getElementById('chat-unread').classList.remove('hidden');
+           const myChats = data.chat.filter(m => m.target === 'all' || m.target === window.state.myPlayerId || m.sender === window.state.myPlayerId);
+           window.renderChat(myChats);
+           if (!window.state.isChatOpen && myChats.length > window.state.chat.length && myChats[myChats.length-1].sender !== window.state.myPlayerId) {
+               document.getElementById('chat-unread').classList.remove('hidden');
+           }
         }
         window.renderAll();
       }, (error) => console.error("Sync Error:", error));
     }
 
-    async function syncMyState() {
-      if (window.state.mode !== 'multi' || !user) return;
+    window.fb_syncMyState = async () => {
+      if (!window.state.mode.startsWith('multi') || !user) return;
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
-      await updateDoc(roomRef, { [window.state.myPlayerId]: { money: window.state.money, prof: window.state.prof, stacks: serializeStacks(window.state.stacks) } });
-    }
+      await updateDoc(roomRef, { [`playersData.${window.state.myPlayerId}`]: { money: window.state.money, prof: window.state.prof, stacks: serializeStacks(window.state.stacks) } });
+    };
 
-    async function syncGlobalState() {
-      if (window.state.mode !== 'multi' || !user) return;
+    window.fb_syncGlobalState = async () => {
+      if (!window.state.mode.startsWith('multi') || !user) return;
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
       await updateDoc(roomRef, { turnCount: window.state.turnCount, sharedPool: window.state.sharedPool, displayPool: window.state.displayPool, market: window.state.market, newsHistory: window.state.newsHistory });
-    }
+    };
 
     async function executeTradeInDB(roomRef, data) {
-       const t1 = data.trade.p1; const t2 = data.trade.p2;
-       const newP1Money = data.p1.money - t1.money + t2.money; const newP2Money = data.p2.money - t2.money + t1.money;
-       const newP1Stacks = removeItemsFromStacks(data.p1.stacks, t1.items); const newP2Stacks = removeItemsFromStacks(data.p2.stacks, t2.items);
+       const tr = data.activeTrade;
+       const pA_id = tr.pA; const pB_id = tr.pB;
        
-       t2.items.forEach((item, idx) => newP1Stacks.push({ id: `t_${Date.now()}_${idx}`, x: 300+(idx*10), y: 300+(idx*10), cards: [item], crafting: null }));
-       t1.items.forEach((item, idx) => newP2Stacks.push({ id: `t_${Date.now()}_${idx}`, x: 300+(idx*10), y: 300+(idx*10), cards: [item], crafting: null }));
+       let pA_money = data.playersData[pA_id].money - tr.pAMoney + tr.pBMoney;
+       let pB_money = data.playersData[pB_id].money - tr.pBMoney + tr.pAMoney;
+       
+       const newPAStacks = removeItemsFromStacks(data.playersData[pA_id].stacks, tr.pAItems);
+       const newPBStacks = removeItemsFromStacks(data.playersData[pB_id].stacks, tr.pBItems);
+       
+       tr.pBItems.forEach((item, idx) => newPAStacks.push({ id: `t_${Date.now()}_${idx}`, xRatio: 0.5, yRatio: 0.5, cards: [item], crafting: null }));
+       tr.pAItems.forEach((item, idx) => newPBStacks.push({ id: `t_${Date.now()}_${idx}`, xRatio: 0.5, yRatio: 0.5, cards: [item], crafting: null }));
 
        await updateDoc(roomRef, {
-           'p1.money': newP1Money, 'p1.stacks': newP1Stacks, 'p2.money': newP2Money, 'p2.stacks': newP2Stacks,
-           'trade.p1': {items:[], money:0, accept:false}, 'trade.p2': {items:[], money:0, accept:false}
+           [`playersData.${pA_id}.money`]: pA_money, [`playersData.${pA_id}.stacks`]: newPAStacks,
+           [`playersData.${pB_id}.money`]: pB_money, [`playersData.${pB_id}.stacks`]: newPBStacks,
+           activeTrade: null
        });
-       window.notify("거래 성사! 보드와 골드를 확인하세요 🎁", "success");
+       window.notify("거래 성사! 보드 중앙과 골드를 확인하세요 🎁", "success");
        window.state.localTradeOffer = { money: 0, items: [] };
+       
+       // 만약 내가 거래자라면 내 로컬 상태 강제 업데이트
+       if (window.state.myPlayerId === pA_id || window.state.myPlayerId === pB_id) {
+           const myNewData = window.state.myPlayerId === pA_id ? {m: pA_money, s: newPAStacks} : {m: pB_money, s: newPBStacks};
+           window.state.money = myNewData.m;
+           const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
+           window.state.stacks = myNewData.s.map(s => ({...s, x: s.xRatio * w, y: s.yRatio * h}));
+           window.renderAll();
+       }
     }
 
     function removeItemsFromStacks(stacks, itemsToRemove) {
@@ -906,7 +963,7 @@
           else window.notify("시장에서 안 사는 물건입니다 ❌", "error");
 
           if (remains.length > 0) window.state.stacks.push({ id: `s${window.nextStackId++}`, x: window.state.draggingStack.x - 50, y: window.state.draggingStack.y - 100, cards: remains, crafting: null });
-          window.state.draggingStack = null; window.dragData = null; window.renderAll(); window.syncMyState(); return;
+          window.state.draggingStack = null; window.dragData = null; window.renderAll(); window.fb_syncMyState(); return;
       }
 
       let ts = null; let minD = 60; 
@@ -926,15 +983,16 @@
         window.state.stacks.push({ id: `s${window.nextStackId++}`, x: window.state.draggingStack.x, y: window.state.draggingStack.y, cards: window.state.draggingStack.cards, crafting: null });
         window.checkAndSetRecipe(window.state.stacks[window.state.stacks.length - 1]);
       }
-      window.state.draggingStack = null; window.dragData = null; window.renderAll(); window.syncMyState();
+      window.state.draggingStack = null; window.dragData = null; window.renderAll(); window.fb_syncMyState();
     });
 
     // --- UI 그리기 ---
     window.renderAll = function() {
       document.getElementById('score').innerText = window.state.money;
-      if (window.state.mode === 'multi') {
-         const isMyTurn = (window.state.myPlayerId === 'p1' && window.state.turnCount % 2 !== 0) || (window.state.myPlayerId === 'p2' && window.state.turnCount % 2 === 0);
-         document.getElementById('turn-status').innerText = isMyTurn ? "진행 턴 (내 차례!)" : "진행 턴 (상대 대기중)";
+      if (window.state.mode === 'multi-play') {
+         const currentTurnPlayer = window.state.playerIds[(window.state.turnCount - 1) % window.state.playerIds.length];
+         const isMyTurn = (currentTurnPlayer === window.state.myPlayerId);
+         document.getElementById('turn-status').innerText = isMyTurn ? "진행 턴 (내 차례!)" : `진행 턴 (${currentTurnPlayer} 대기중)`;
          document.getElementById('turn-status').className = isMyTurn ? "text-[10px] font-black text-sky-500 uppercase text-center" : "text-[10px] font-black text-slate-400 uppercase text-center";
       } else document.getElementById('turn-count').innerText = window.state.turnCount;
 
@@ -943,21 +1001,20 @@
         return `<div onclick="window.handlePoolClick(${i})" onmouseenter="window.showTooltip('${id}', event)" onmouseleave="window.hideTooltip()" onmousemove="window.moveTooltip(event)" class="w-12 h-16 rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer border-2 bg-white hover:scale-105 shadow-sm border-slate-200"><div class="${t.textColor} drop-shadow-sm mb-1">${t.icon.replace('text-3xl', 'text-xl')}</div><span class="text-[9px] font-black ${t.textColor}">${t.name}</span></div>`;
       }).join('');
 
-      const targetStacks = (window.state.viewingOpponent && window.state.oppData) ? window.state.oppData.stacks.map(s => ({...s, x: s.xRatio * (document.getElementById('board-area').clientWidth||800), y: s.yRatio * (document.getElementById('board-area').clientHeight||600)})) : window.state.stacks;
+      let targetStacks = window.state.stacks;
+      if (window.state.viewingOpponent && window.state.viewingPlayerId && window.state.playersData[window.state.viewingPlayerId]) {
+         const oppData = window.state.playersData[window.state.viewingPlayerId];
+         document.getElementById('overlay-opp-score').innerText = oppData.money;
+         const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
+         targetStacks = oppData.stacks.map(s => ({...s, x: s.xRatio * w, y: s.yRatio * h}));
+      }
+
       let html = targetStacks.map(stack => window.renderStackDOM(stack, false, window.state.viewingOpponent)).join('');
       if (window.state.draggingStack && !window.state.viewingOpponent) html += window.renderStackDOM(window.state.draggingStack, true);
       document.getElementById('board-area').innerHTML = html;
 
-      window.renderMarketPrices(); window.renderProficiency(); window.renderOpponentMini(); window.renderTradeUI();
-    };
-
-    window.renderOpponentMini = function() {
-      if (window.state.mode !== 'multi' || !window.state.oppData) return;
-      document.getElementById('opp-score').innerText = `${window.state.oppData.money} G`;
-      document.getElementById('opponent-mini-board').innerHTML = window.state.oppData.stacks.map(s => {
-         const t = TILES[s.cards[s.cards.length - 1]] || TILES.wood;
-         return `<div class="absolute w-4 h-5 rounded-[2px] border flex items-center justify-center ${t.cardClass}" style="left:${s.xRatio*100}%; top:${s.yRatio*100}%; transform:translate(-50%,-50%);">${t.icon.replace('text-3xl', 'text-[8px]')}</div>`;
-      }).join('');
+      window.renderMarketPrices(); window.renderProficiency();
+      if(!document.getElementById('modal-trade').classList.contains('hidden')) window.renderTradeUI();
     };
 
     window.renderProficiency = function() {
@@ -1004,101 +1061,146 @@
       document.getElementById('news-list').innerHTML = window.state.newsHistory.map(n => `<div class="flex flex-col bg-slate-50 p-3 rounded-2xl border border-slate-100 shadow-sm"><div class="flex items-center gap-2 mb-1"><span class="text-[10px] font-black text-white bg-slate-400 px-2 py-0.5 rounded-full">Turn ${n.turn}</span>${n.type === 'up' ? '<i class="ph-bold ph-trend-up text-emerald-500 text-lg"></i>' : n.type === 'down' ? '<i class="ph-bold ph-trend-down text-red-500 text-lg"></i>' : '<i class="ph-bold ph-minus text-slate-400 text-lg"></i>'}</div><p class="text-xs font-bold text-slate-700">${n.msg}</p></div>`).join('');
     };
 
-    window.toggleTradeModal = function() {
-      const m = document.getElementById('modal-trade');
-      if(m.classList.contains('hidden')) { m.classList.remove('hidden'); m.classList.add('flex'); window.renderTradeUI(); setTimeout(()=> { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10); } 
-      else { m.classList.add('opacity-0'); m.children[0].classList.add('scale-95'); setTimeout(()=> { m.classList.add('hidden'); m.classList.remove('flex'); }, 300); }
-    };
-
+    // --- N인용 거래 시스템 UI 로직 ---
     window.renderTradeUI = function() {
-      if(document.getElementById('modal-trade').classList.contains('hidden')) return;
-      const lt = window.state.localTradeOffer; document.getElementById('trade-my-money').innerText = `${lt.money} G`;
+      const c = document.getElementById('trade-dynamic-content');
       
-      let inv = {}; window.state.stacks.forEach(s => s.cards.forEach(c => inv[c] = (inv[c]||0) + 1));
-      lt.items.forEach(c => { if(inv[c]) inv[c]--; });
-      
-      document.getElementById('trade-my-inventory').innerHTML = Object.entries(inv).filter(([k,v])=>v>0).map(([k,v]) => {
-         const t = TILES[k]; return `<div onclick="window.addToOffer('${k}')" class="px-2 py-1 bg-white border border-slate-200 rounded cursor-pointer hover:bg-sky-50 flex items-center gap-1"><span class="${t.textColor}">${t.icon.replace('text-3xl','text-sm')}</span> <span class="text-[10px] font-bold text-slate-700">${t.name} x${v}</span></div>`;
-      }).join('') || '<span class="text-[10px] text-slate-400">자원이 없습니다.</span>';
-
-      document.getElementById('trade-my-offer').innerHTML = lt.items.map((k, idx) => {
-         const t = TILES[k]; return `<div onclick="window.removeFromOffer(${idx})" class="px-2 py-1 bg-white border border-sky-300 rounded cursor-pointer hover:bg-rose-50 flex items-center gap-1 shadow-sm"><span class="${t.textColor}">${t.icon.replace('text-3xl','text-sm')}</span> <span class="text-[10px] font-bold text-slate-700">${t.name}</span></div>`;
-      }).join('') || '<span class="text-[10px] text-sky-400">클릭하여 자원을 올려주세요.</span>';
-
-      const oppId = window.state.myPlayerId === 'p1' ? 'p2' : 'p1';
-      const oppTrade = window.state.trade[oppId] || {items:[], money:0};
-      document.getElementById('trade-opp-money').innerText = `${oppTrade.money} G`;
-      document.getElementById('trade-opp-offer').innerHTML = oppTrade.items.map(k => {
-         const t = TILES[k]; return `<div class="px-2 py-1 bg-white border border-rose-300 rounded flex items-center gap-1 shadow-sm pointer-events-none"><span class="${t.textColor}">${t.icon.replace('text-3xl','text-sm')}</span> <span class="text-[10px] font-bold text-slate-700">${t.name}</span></div>`;
-      }).join('') || '<span class="text-[10px] text-rose-400">제안된 자원이 없습니다.</span>';
-
-      const myTrade = window.state.trade[window.state.myPlayerId] || {accept:false};
-      const btn = document.getElementById('btn-accept-trade');
-      if (myTrade.accept) {
-         btn.className = "py-3 bg-slate-300 text-slate-500 font-black rounded-xl shadow-inner flex items-center justify-center gap-2 cursor-default pointer-events-none";
-         btn.innerHTML = `<i class="ph-bold ph-hourglass"></i> 상대방 수락 대기 중...`;
-      } else {
-         btn.className = "py-3 bg-purple-600 text-white font-black rounded-xl hover:bg-purple-500 transition-colors shadow-md flex items-center justify-center gap-2";
-         btn.innerHTML = `<i class="ph-bold ph-check-circle"></i> 현재 조건으로 거래 수락`;
+      if (!window.state.activeTrade) {
+         let opts = `<option value="">거래할 상대를 선택하세요</option>`;
+         window.state.playerIds.forEach(p => { if (p !== window.state.myPlayerId) opts += `<option value="${p}">${p}</option>`; });
+         c.innerHTML = `<div class="p-8 w-full text-center flex flex-col items-center justify-center min-h-[300px]"><h3 class="text-xl font-black text-slate-700 mb-6">새로운 1:1 거래 시작하기</h3><select id="trade-target-sel" class="p-3 border-2 border-indigo-200 rounded-xl font-black text-indigo-700 mb-6 outline-none">${opts}</select><button onclick="window.initiateTrade()" class="bg-indigo-500 text-white font-black px-8 py-3 rounded-xl hover:bg-indigo-400 shadow-md">거래 세션 열기</button></div>`;
+         return;
       }
+
+      const tr = window.state.activeTrade;
+      const isPA = tr.pA === window.state.myPlayerId;
+      const isPB = tr.pB === window.state.myPlayerId;
+
+      if (!isPA && !isPB) {
+         c.innerHTML = `<div class="p-8 w-full text-center text-slate-500 font-bold min-h-[300px] flex items-center justify-center">현재 ${tr.pA} 님과 ${tr.pB} 님이 거래 중입니다. <br>끝날 때까지 잠시 기다려 주세요.</div>`;
+         return;
+      }
+
+      const oppName = isPA ? tr.pB : tr.pA;
+      const myTrade = isPA ? {money: tr.pAMoney, items: tr.pAItems, accept: tr.pAAccept} : {money: tr.pBMoney, items: tr.pBItems, accept: tr.pBAccept};
+      const oppTrade = isPA ? {money: tr.pBMoney, items: tr.pBItems, accept: tr.pBAccept} : {money: tr.pAMoney, items: tr.pAItems, accept: tr.pAAccept};
+
+      // 내 인벤토리 필터링 (제안한 자원 제외)
+      let inv = {}; window.state.stacks.forEach(s => s.cards.forEach(card => inv[card] = (inv[card]||0) + 1));
+      myTrade.items.forEach(card => { if(inv[card]) inv[card]--; });
+      const invHtml = Object.entries(inv).filter(([k,v])=>v>0).map(([k,v]) => `<div onclick="window.addToOffer('${k}')" class="px-2 py-1 bg-white border border-slate-200 rounded cursor-pointer hover:bg-sky-50 flex items-center gap-1 shadow-sm"><span class="${TILES[k].textColor}">${TILES[k].icon.replace('text-3xl','text-sm')}</span> <span class="text-[10px] font-bold text-slate-700">${TILES[k].name} x${v}</span></div>`).join('') || '<span class="text-[10px] text-slate-400">자원이 없습니다.</span>';
+      const myOfferHtml = myTrade.items.map((k, idx) => `<div onclick="window.removeFromOffer(${idx})" class="px-2 py-1 bg-white border border-sky-300 rounded cursor-pointer hover:bg-rose-50 flex items-center gap-1 shadow-sm"><span class="${TILES[k].textColor}">${TILES[k].icon.replace('text-3xl','text-sm')}</span> <span class="text-[10px] font-bold text-slate-700">${TILES[k].name}</span></div>`).join('') || '<span class="text-[10px] text-sky-400">클릭하여 자원을 올려주세요.</span>';
+      const oppOfferHtml = oppTrade.items.map(k => `<div class="px-2 py-1 bg-white border border-rose-300 rounded flex items-center gap-1 shadow-sm pointer-events-none"><span class="${TILES[k].textColor}">${TILES[k].icon.replace('text-3xl','text-sm')}</span> <span class="text-[10px] font-bold text-slate-700">${TILES[k].name}</span></div>`).join('') || '<span class="text-[10px] text-rose-400">제안된 자원이 없습니다.</span>';
+
+      c.innerHTML = `
+        <div class="flex-1 border-r border-slate-100 p-5 flex flex-col gap-4 overflow-y-auto custom-scroll relative">
+          <button onclick="window.cancelTrade()" class="absolute top-2 right-2 text-xs bg-slate-100 text-slate-500 font-bold px-2 py-1 rounded hover:bg-rose-100 hover:text-rose-600">거래 취소</button>
+          <h3 class="font-black text-sky-600 text-center bg-sky-50 py-1 rounded-lg">내가 줄 물건</h3>
+          <div class="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-200">
+            <span class="text-xs font-black text-slate-600">골드 제안</span>
+            <div class="flex items-center gap-2">
+              <button onclick="window.adjTradeMoney(-100)" class="px-2 py-0.5 bg-slate-200 rounded text-xs font-bold">-100</button>
+              <span class="font-black text-amber-500 w-12 text-center">${myTrade.money} G</span>
+              <button onclick="window.adjTradeMoney(100)" class="px-2 py-0.5 bg-slate-200 rounded text-xs font-bold">+100</button>
+            </div>
+          </div>
+          <div class="text-xs font-black text-slate-500 mt-2">내 영지의 자원 (클릭하여 추가)</div>
+          <div class="flex flex-wrap gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200 min-h-[60px]">${invHtml}</div>
+          <div class="text-xs font-black text-sky-500 mt-2">현재 제안 품목 (클릭하여 빼기)</div>
+          <div class="flex flex-wrap gap-2 p-3 bg-sky-50 rounded-xl border border-sky-200 min-h-[80px]">${myOfferHtml}</div>
+        </div>
+        <div class="flex-1 p-5 flex flex-col gap-4 overflow-y-auto custom-scroll">
+          <h3 class="font-black text-rose-600 text-center bg-rose-50 py-1 rounded-lg">${oppName}님이 줄 물건</h3>
+          <div class="flex items-center justify-center bg-slate-50 p-2 rounded-xl border border-slate-200 mt-1">
+            <span class="font-black text-amber-500 text-lg">${oppTrade.money} G</span>
+          </div>
+          <div class="text-xs font-black text-rose-500 mt-2">상대방 제안 품목</div>
+          <div class="flex flex-wrap gap-2 p-3 bg-rose-50 rounded-xl border border-rose-200 min-h-[160px] content-start">${oppOfferHtml}</div>
+          <div class="mt-auto flex flex-col gap-2">
+             <div class="text-center text-[10px] font-bold text-slate-500">조건을 바꾸면 양측의 수락이 취소됩니다.</div>
+             <button onclick="window.acceptTrade()" class="py-3 ${myTrade.accept ? 'bg-slate-300 text-slate-500' : 'bg-purple-600 text-white hover:bg-purple-500'} font-black rounded-xl transition-colors shadow-md flex items-center justify-center gap-2">
+               <i class="ph-bold ${myTrade.accept ? 'ph-hourglass' : 'ph-check-circle'}"></i> ${myTrade.accept ? '상대방 수락 대기 중...' : '현재 조건으로 거래 수락'}
+             </button>
+          </div>
+        </div>
+      `;
     };
 
-    window.adjTradeMoney = function(amt) {
-      const newM = window.state.localTradeOffer.money + amt;
-      if (newM < 0 || newM > window.state.money) return window.notify("보유한 골드를 초과할 수 없습니다.", "error");
-      window.state.localTradeOffer.money = newM; window.renderTradeUI();
-    };
-
-    window.addToOffer = function(itemId) { window.state.localTradeOffer.items.push(itemId); window.renderTradeUI(); };
-    window.removeFromOffer = function(idx) { window.state.localTradeOffer.items.splice(idx, 1); window.renderTradeUI(); };
-
-    window.proposeTrade = async function() {
-      const lt = window.state.localTradeOffer;
-      if (window.state.mode !== 'multi' || !user) return;
+    window.initiateTrade = async function() {
+      const sel = document.getElementById('trade-target-sel');
+      if(!sel || !sel.value) return window.notify("상대방을 선택하세요", "error");
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
       await updateDoc(roomRef, {
-         [`trade.${window.state.myPlayerId}.items`]: lt.items, [`trade.${window.state.myPlayerId}.money`]: lt.money,
-         [`trade.${window.state.myPlayerId}.accept`]: false, [`trade.${window.state.myPlayerId === 'p1'?'p2':'p1'}.accept`]: false 
+          activeTrade: { pA: window.state.myPlayerId, pB: sel.value, pAMoney: 0, pAItems: [], pBMoney: 0, pBItems: [], pAAccept: false, pBAccept: false }
       });
-      window.notify("제안을 성공적으로 올렸습니다.", "success");
+      window.state.localTradeOffer = { money: 0, items: [] };
+    };
+
+    window.cancelTrade = async function() {
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
+      await updateDoc(roomRef, { activeTrade: null });
+      window.state.localTradeOffer = { money: 0, items: [] };
+      window.notify("거래가 취소되었습니다.", "info");
+    };
+
+    window.adjTradeMoney = async function(amt) {
+      if(!window.state.activeTrade) return;
+      const isPA = window.state.activeTrade.pA === window.state.myPlayerId;
+      const curM = isPA ? window.state.activeTrade.pAMoney : window.state.activeTrade.pBMoney;
+      const newM = curM + amt;
+      if (newM < 0 || newM > window.state.money) return window.notify("보유한 골드를 초과할 수 없습니다.", "error");
+      
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
+      await updateDoc(roomRef, {
+         [`activeTrade.${isPA ? 'pAMoney' : 'pBMoney'}`]: newM,
+         'activeTrade.pAAccept': false, 'activeTrade.pBAccept': false // 조건 변경시 수락 취소
+      });
+    };
+
+    window.addToOffer = async function(itemId) { 
+      const isPA = window.state.activeTrade.pA === window.state.myPlayerId;
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
+      await updateDoc(roomRef, {
+         [`activeTrade.${isPA ? 'pAItems' : 'pBItems'}`]: arrayUnion(itemId),
+         'activeTrade.pAAccept': false, 'activeTrade.pBAccept': false 
+      });
+    };
+
+    window.removeFromOffer = async function(idx) { 
+      const isPA = window.state.activeTrade.pA === window.state.myPlayerId;
+      const curItems = isPA ? [...window.state.activeTrade.pAItems] : [...window.state.activeTrade.pBItems];
+      curItems.splice(idx, 1);
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
+      await updateDoc(roomRef, {
+         [`activeTrade.${isPA ? 'pAItems' : 'pBItems'}`]: curItems,
+         'activeTrade.pAAccept': false, 'activeTrade.pBAccept': false 
+      });
     };
 
     window.acceptTrade = async function() {
-      if (window.state.mode !== 'multi' || !user) return;
+      const isPA = window.state.activeTrade.pA === window.state.myPlayerId;
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
-      await updateDoc(roomRef, { [`trade.${window.state.myPlayerId}.accept`]: true });
+      await updateDoc(roomRef, { [`activeTrade.${isPA ? 'pAAccept' : 'pBAccept'}`]: true });
     };
 
-    window.toggleChat = function() {
-      const c = document.getElementById('chat-container'); const ic = document.getElementById('chat-icon');
-      window.state.isChatOpen = !window.state.isChatOpen;
-      if (window.state.isChatOpen) { c.classList.remove('chat-closed'); c.classList.add('chat-open'); ic.classList.replace('ph-caret-up', 'ph-caret-down'); document.getElementById('chat-unread').classList.add('hidden'); } 
-      else { c.classList.remove('chat-open'); c.classList.add('chat-closed'); ic.classList.replace('ph-caret-down', 'ph-caret-up'); }
+    window.sendChat = async function() {
+      const input = document.getElementById('chat-input'); const text = input.value.trim();
+      const target = document.getElementById('chat-target-select').value; // 귓속말 기능 추가
+      if (!text || window.state.mode !== 'multi-play' || !user) return;
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
+      await updateDoc(roomRef, { chat: arrayUnion({ sender: window.state.myPlayerId, target: target, msg: text, time: Date.now() }) });
+      input.value = '';
     };
 
     window.renderChat = function(msgs) {
       window.state.chat = msgs; const box = document.getElementById('chat-messages');
       box.innerHTML = msgs.map(m => {
          const isMe = m.sender === window.state.myPlayerId;
-         return `<div class="flex ${isMe?'justify-end':'justify-start'}"><div class="max-w-[80%] px-3 py-1.5 rounded-xl ${isMe?'bg-indigo-500 text-white rounded-br-none':'bg-white border border-slate-200 text-slate-700 rounded-bl-none'} shadow-sm">${m.msg}</div></div>`;
+         const whisperLabel = m.target !== 'all' ? `<span class="text-[9px] text-indigo-400 font-bold block mb-0.5">[귓속말: ${isMe ? 'To '+m.target : 'From '+m.sender}]</span>` : `<span class="text-[9px] text-slate-400 font-bold block mb-0.5">[${m.sender}]</span>`;
+         return `<div class="flex ${isMe?'justify-end':'justify-start'}"><div class="max-w-[80%] px-3 py-1.5 rounded-xl ${isMe?'bg-indigo-500 text-white rounded-br-none':'bg-white border border-slate-200 text-slate-700 rounded-bl-none'} shadow-sm">${whisperLabel}${m.msg}</div></div>`;
       }).join('');
       box.scrollTop = box.scrollHeight;
     };
-
-    window.sendChat = async function() {
-      const input = document.getElementById('chat-input'); const text = input.value.trim();
-      if (!text || window.state.mode !== 'multi' || !user) return;
-      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
-      await updateDoc(roomRef, { chat: arrayUnion({ sender: window.state.myPlayerId, msg: text, time: Date.now() }) });
-      input.value = '';
-    };
-
-    window.addEventListener("beforeunload", (e) => {
-        if (window.state.mode === 'multi' && window.state.roomId && user) {
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
-            deleteDoc(roomRef).catch(()=>{}); 
-        }
-    });
 
   </script>
 </body>
