@@ -50,6 +50,13 @@
       box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
     }
 
+    .trade-zone-active {
+      border-color: #8b5cf6 !important;
+      background-color: #ede9fe !important;
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+    }
+    
     .price-up { color: #10b981; } 
     .price-down { color: #ef4444; } 
     .price-neutral { color: #64748b; } 
@@ -152,6 +159,7 @@
           <span class="text-[10px] font-black text-indigo-400 uppercase bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">Multiplayer</span>
           <span class="text-xs font-black text-slate-600 mt-1">방: <span id="display-room-code" class="text-indigo-600"></span></span>
         </div>
+        <!-- 거래 버튼 (멀티 전용) -->
         <button id="btn-trade" onclick="window.toggleTradeModal()" class="hidden py-2 px-3 bg-purple-50 text-purple-700 rounded-xl font-black text-xs hover:bg-purple-100 transition-colors shadow-sm border border-purple-200 hover:scale-105 flex-col items-center justify-center">
           <i class="ph-bold ph-handshake text-lg mb-0.5"></i> 거래소
         </button>
@@ -253,6 +261,7 @@
         <!-- 내 제안 -->
         <div class="flex-1 border-r border-slate-100 p-5 flex flex-col gap-4 overflow-y-auto custom-scroll">
           <h3 class="font-black text-sky-600 text-center bg-sky-50 py-1 rounded-lg">내가 줄 물건 (제안)</h3>
+          
           <div class="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-200">
             <span class="text-xs font-black text-slate-600">골드 제안</span>
             <div class="flex items-center gap-2">
@@ -262,21 +271,25 @@
             </div>
           </div>
           
+          <!-- 인벤토리에서 선택 -->
           <div class="text-xs font-black text-slate-500 mt-2">내 영지의 자원 (클릭하여 추가)</div>
           <div id="trade-my-inventory" class="flex flex-wrap gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200 min-h-[60px]"></div>
 
+          <!-- 제안 목록 -->
           <div class="text-xs font-black text-sky-500 mt-2">현재 제안 품목 (클릭하여 빼기)</div>
           <div id="trade-my-offer" class="flex flex-wrap gap-2 p-3 bg-sky-50 rounded-xl border border-sky-200 min-h-[80px]"></div>
           
-          <button onclick="window.proposeTrade()" class="mt-auto py-3 bg-sky-500 text-white font-black rounded-xl hover:bg-sky-400 transition-colors shadow-md">내 제안 올리기</button>
+          <button onclick="window.proposeTrade()" class="mt-auto py-3 bg-sky-500 text-white font-black rounded-xl hover:bg-sky-400 transition-colors shadow-md">내 제안 확정하기</button>
         </div>
 
         <!-- 상대방 제안 -->
         <div class="flex-1 p-5 flex flex-col gap-4 overflow-y-auto custom-scroll">
           <h3 class="font-black text-rose-600 text-center bg-rose-50 py-1 rounded-lg">상대방이 줄 물건</h3>
+          
           <div class="flex items-center justify-center bg-slate-50 p-2 rounded-xl border border-slate-200 mt-1">
             <span class="font-black text-amber-500 text-lg" id="trade-opp-money">0 G</span>
           </div>
+
           <div class="text-xs font-black text-rose-500 mt-2">상대방 제안 품목</div>
           <div id="trade-opp-offer" class="flex flex-wrap gap-2 p-3 bg-rose-50 rounded-xl border border-rose-200 min-h-[160px] content-start"></div>
 
@@ -331,73 +344,69 @@
     </div>
   </div>
 
+  <div id="notif-container" class="fixed top-24 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-2 pointer-events-none w-full max-w-md"></div>
+
   <div id="tooltip" class="fixed z-[999] pointer-events-none bg-white/95 backdrop-blur-md border-2 border-sky-200 p-3 rounded-2xl shadow-2xl hidden transition-opacity text-slate-800">
     <div class="text-[10px] font-black text-sky-500 uppercase mb-2 border-b border-sky-100 pb-1">관련 조합법</div>
     <div id="tooltip-content" class="space-y-2"></div>
   </div>
 
-  <div id="notif-container" class="fixed top-24 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-2 pointer-events-none w-full max-w-md"></div>
-
-  <!-- 통합된 자바스크립트 모듈 -->
+  <!-- 통합 모듈 스크립트 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, onSnapshot, arrayUnion, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    let firebaseConfig;
-    try {
-        firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "684632891695", projectId: "sky-tycoon-mock" };
-    } catch(e) {
-        firebaseConfig = { apiKey: "684632891695", projectId: "sky-tycoon-mock" };
-    }
+    // --- Firebase Init ---
+    let firebaseConfig = null;
+    try { firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null; } catch(e) {}
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
     let db, auth, user = null;
+    let isFirebaseReady = false;
 
-    // --- 1. 데이터 ---
+    async function initFirebase() {
+        if (!firebaseConfig) { console.log("Offline mode"); return; }
+        try {
+            const app = initializeApp(firebaseConfig); auth = getAuth(app); db = getFirestore(app);
+            onAuthStateChanged(auth, (u) => { user = u; isFirebaseReady = true; });
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+            else await signInAnonymously(auth);
+        } catch(e) { console.warn("Firebase Error", e); }
+    }
+    initFirebase();
+
+    // --- Data ---
     const TILES = {
       wood: { name: '나무', category: 'woodcraft', cardClass: 'bg-emerald-100 text-emerald-800 border-emerald-400', textColor: 'text-emerald-700', icon: '<i class="ph-fill ph-tree-evergreen text-3xl"></i>', basePrice: 100, volatility: 1.0 },
       stone: { name: '바위', category: 'mining', cardClass: 'bg-stone-200 text-stone-800 border-stone-400', textColor: 'text-stone-700', icon: '<i class="ph-fill ph-mountains text-3xl"></i>', basePrice: 100, volatility: 0.8 },
       seed: { name: '씨앗', category: 'farming', cardClass: 'bg-lime-100 text-lime-800 border-lime-400', textColor: 'text-lime-700', icon: '<i class="ph-fill ph-plant text-3xl"></i>', basePrice: 120, volatility: 1.2 },
       water: { name: '물', category: 'farming', cardClass: 'bg-cyan-100 text-cyan-800 border-cyan-400', textColor: 'text-cyan-700', icon: '<i class="ph-fill ph-drop text-3xl"></i>', basePrice: 100, volatility: 0.5 },
       fire: { name: '불', category: 'cooking', cardClass: 'bg-orange-100 text-orange-800 border-orange-400', textColor: 'text-orange-700', icon: '<i class="ph-fill ph-fire text-3xl"></i>', basePrice: 100, volatility: 0.5 },
-      
       charcoal: { name: '목탄', category: 'woodcraft', cardClass: 'bg-zinc-800 text-zinc-100 border-zinc-600', textColor: 'text-zinc-600', icon: '<i class="ph-fill ph-fire text-3xl text-orange-500"></i>', basePrice: 250, volatility: 1.0 },
       iron: { name: '철', category: 'smithing', cardClass: 'bg-slate-300 text-slate-800 border-slate-500', textColor: 'text-slate-700', icon: '<i class="ph-fill ph-wall text-3xl"></i>', basePrice: 250, volatility: 1.5 },
       wheat: { name: '밀', category: 'farming', cardClass: 'bg-yellow-100 text-yellow-800 border-yellow-500', textColor: 'text-yellow-700', icon: '<i class="ph-fill ph-grains text-3xl"></i>', basePrice: 220, volatility: 1.0 },
       paper: { name: '종이', category: 'woodcraft', cardClass: 'bg-slate-100 text-slate-800 border-slate-300', textColor: 'text-slate-700', icon: '<i class="ph-fill ph-scroll text-3xl"></i>', basePrice: 150, volatility: 0.5 },
-      
       steel: { name: '강철', category: 'smithing', cardClass: 'bg-slate-700 text-slate-100 border-slate-900', textColor: 'text-slate-800', icon: '<i class="ph-fill ph-cube text-3xl"></i>', basePrice: 650, volatility: 1.2 },
       brick: { name: '벽돌', category: 'mining', cardClass: 'bg-red-800 text-red-100 border-red-900', textColor: 'text-red-700', icon: '<i class="ph-fill ph-bricks text-3xl"></i>', basePrice: 400, volatility: 0.8 },
       bread: { name: '빵', category: 'cooking', cardClass: 'bg-amber-200 text-amber-900 border-amber-500', textColor: 'text-amber-700', icon: '<i class="ph-fill ph-bread text-3xl"></i>', basePrice: 400, volatility: 0.8 },
-      
       research: { name: '연구 데이터', category: 'general', cardClass: 'bg-purple-100 text-purple-800 border-purple-400', textColor: 'text-purple-700', icon: '<i class="ph-fill ph-flask text-3xl"></i>', basePrice: 300, volatility: 0.2 },
       laboratory: { name: '연구소', category: 'general', cardClass: 'bg-purple-700 text-white border-purple-900', textColor: 'text-purple-700', icon: '<i class="ph-fill ph-flask text-3xl"></i>', basePrice: 0 },
-      
       villager: { name: '주민', category: 'general', cardClass: 'bg-orange-50 text-orange-700 border-orange-400', textColor: 'text-orange-600', icon: '<i class="ph-fill ph-users text-3xl"></i>', basePrice: 0 },
       lumber_mill: { name: '벌목장', category: 'woodcraft', cardClass: 'bg-emerald-700 text-white border-emerald-900', textColor: 'text-emerald-700', icon: '<i class="ph-fill ph-tent text-3xl"></i>', basePrice: 0 },
       quarry: { name: '채석장', category: 'mining', cardClass: 'bg-stone-700 text-white border-stone-900', textColor: 'text-stone-700', icon: '<i class="ph-fill ph-hammer text-3xl"></i>', basePrice: 0 },
       farm: { name: '농장', category: 'farming', cardClass: 'bg-yellow-600 text-white border-yellow-800', textColor: 'text-yellow-700', icon: '<i class="ph-fill ph-barn text-3xl"></i>', basePrice: 0 },
       house: { name: '오두막', category: 'woodcraft', cardClass: 'bg-pink-400 text-white border-pink-600', textColor: 'text-pink-600', icon: '<i class="ph-fill ph-house text-3xl"></i>', basePrice: 0 },
-
       mana_crystal: { name: '마나석', category: 'mining', cardClass: 'bg-indigo-200 text-indigo-900 border-indigo-500', textColor: 'text-indigo-800', icon: '<i class="ph-fill ph-sketch-logo text-3xl text-indigo-600"></i>', basePrice: 900, volatility: 2.0 },
       golden_apple: { name: '황금사과', category: 'farming', cardClass: 'bg-yellow-300 text-yellow-900 border-yellow-500', textColor: 'text-yellow-800', icon: '<i class="ph-fill ph-apple-logo text-3xl text-red-500"></i>', basePrice: 850, volatility: 1.5 },
       sky_cloth: { name: '천공의 천', category: 'woodcraft', cardClass: 'bg-sky-100 text-sky-800 border-sky-400', textColor: 'text-sky-700', icon: '<i class="ph-fill ph-scroll text-3xl text-sky-500"></i>', basePrice: 800, volatility: 1.2 },
-
       elixir: { name: '엘릭서', category: 'cooking', cardClass: 'bg-fuchsia-300 text-fuchsia-900 border-fuchsia-500', textColor: 'text-fuchsia-800', icon: '<i class="ph-fill ph-potion text-3xl text-fuchsia-600"></i>', basePrice: 2800, volatility: 2.5 },
       star_fruit: { name: '별빛열매', category: 'farming', cardClass: 'bg-amber-300 text-amber-900 border-amber-600', textColor: 'text-amber-800', icon: '<i class="ph-fill ph-star text-3xl text-white"></i>', basePrice: 2500, volatility: 1.8 },
       magic_carpet: { name: '마법 양탄자', category: 'woodcraft', cardClass: 'bg-purple-300 text-purple-900 border-purple-500', textColor: 'text-purple-800', icon: '<i class="ph-fill ph-rug text-3xl text-purple-600"></i>', basePrice: 2600, volatility: 1.5 }
     };
 
     const SELLABLE_ITEMS = ['wood', 'stone', 'water', 'fire', 'seed', 'wheat', 'charcoal', 'iron', 'brick', 'steel', 'bread', 'paper', 'research', 'mana_crystal', 'golden_apple', 'sky_cloth', 'elixir', 'star_fruit', 'magic_carpet'];
-
-    const CAT_INFO = {
-      farming: { icon: '<i class="ph-fill ph-plant text-lime-500"></i>', name: '농업' },
-      mining: { icon: '<i class="ph-fill ph-diamond text-stone-500"></i>', name: '채광' }, 
-      woodcraft: { icon: '<i class="ph-fill ph-axe text-emerald-500"></i>', name: '목공' },
-      cooking: { icon: '<i class="ph-fill ph-campfire text-orange-500"></i>', name: '요리' },
-      smithing: { icon: '<i class="ph-fill ph-hammer text-slate-500"></i>', name: '제련' }
-    };
+    const CAT_INFO = { farming: { icon: '<i class="ph-fill ph-plant text-lime-500"></i>', name: '농업' }, mining: { icon: '<i class="ph-fill ph-diamond text-stone-500"></i>', name: '채광' }, woodcraft: { icon: '<i class="ph-fill ph-axe text-emerald-500"></i>', name: '목공' }, cooking: { icon: '<i class="ph-fill ph-campfire text-orange-500"></i>', name: '요리' }, smithing: { icon: '<i class="ph-fill ph-hammer text-slate-500"></i>', name: '제련' } };
 
     const RECIPES = [
       { id: 'c1', category: 'woodcraft', inputs: ['wood', 'fire'], results: ['charcoal'], turns: 1, desc: '목탄 굽기' },
@@ -405,17 +414,14 @@
       { id: 'r2', category: 'cooking', inputs: ['fire', 'wheat'], results: ['bread'], turns: 1, desc: '제빵' },
       { id: 'r8', category: 'farming', inputs: ['stone', 'wheat'], results: ['seed', 'seed'], turns: 1, desc: '탈곡 (씨앗 추출)' }, 
       { id: 'p_p1', category: 'woodcraft', inputs: ['wood', 'water'], results: ['paper'], turns: 1, desc: '종이 만들기' },
-      
       { id: 'c2', category: 'smithing', inputs: ['charcoal', 'iron'], results: ['steel'], turns: 2, desc: '강철 제련' },
       { id: 'c3', category: 'mining', inputs: ['charcoal', 'stone', 'stone'], results: ['brick'], turns: 2, desc: '벽돌 굽기' },
-
       { id: 'r3', category: 'woodcraft', inputs: ['stone', 'wood'], results: ['lumber_mill'], turns: 2, desc: '벌목장 건설' },
       { id: 'r4', category: 'mining', inputs: ['iron', 'stone'], results: ['quarry'], turns: 2, desc: '채석장 건설' },
       { id: 'r5', category: 'farming', inputs: ['seed', 'water'], results: ['farm'], turns: 2, desc: '농장 건설' },
       { id: 'r6', category: 'woodcraft', inputs: ['iron', 'wood'], results: ['house'], turns: 2, desc: '오두막 건설' },
       { id: 'l1', category: 'general', inputs: ['stone', 'iron', 'wood'], results: ['laboratory'], turns: 3, desc: '연구소 건설' },
       { id: 'r7', category: 'general', inputs: ['bread', 'house'], results: ['house', 'villager'], turns: 2, desc: '주민 영입' },
-      
       { id: 'p1', category: 'woodcraft', inputs: ['lumber_mill', 'villager'], results: ['lumber_mill', 'villager', 'wood'], turns: 1, desc: '벌목 작업' },
       { id: 'p2', category: 'mining', inputs: ['quarry', 'villager'], results: ['quarry', 'villager', 'stone'], turns: 1, desc: '채석 작업' },
       { id: 'p3', category: 'farming', inputs: ['farm', 'seed', 'villager'], results: ['farm', 'villager', 'wheat'], turns: 2, desc: '밀 경작' },
@@ -447,223 +453,74 @@
 
     const MAX_TURNS = 30;
 
-    // --- 2. 전역 상태 변수 ---
-    const state = {
+    // --- State ---
+    window.state = {
       mode: 'single', roomId: null, myPlayerId: 'p1', turnCount: 1, money: 0, stacks: [], sharedPool: [], displayPool: [], draggingStack: null, market: {}, newsHistory: [], unlockedSpecialty: null, oppData: null, viewingOpponent: false,
       prof: { farming: { lv: 1, exp: 0 }, mining: { lv: 1, exp: 0 }, woodcraft: { lv: 1, exp: 0 }, cooking: { lv: 1, exp: 0 }, smithing: { lv: 1, exp: 0 } },
-      chat: [], isChatOpen: false,
-      trade: { isActive: false, p1: {money:0, items:[], accept:false}, p2: {money:0, items:[], accept:false} },
-      localTradeOffer: { money: 0, items: [] }
+      chat: [], isChatOpen: false, trade: { isActive: false, p1: {money:0, items:[], accept:false}, p2: {money:0, items:[], accept:false} }, localTradeOffer: { money: 0, items: [] }
     };
-    
-    let nextStackId = 1;
-    let unsubSnapshot = null;
-    let dragData = null;
+    window.nextStackId = 1; let unsubSnapshot = null; window.dragData = null;
 
-    // --- 3. 글로벌 함수 등록 (UI 버튼과 연결) ---
+    // --- Helpers ---
     window.notify = function(msg, type = 'info') {
+      const container = document.getElementById('notif-container');
+      if (!container) return;
       const el = document.createElement('div');
       const bg = type === 'error' ? 'bg-rose-100 text-rose-800 border-rose-300' : type === 'success' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : type === 'action' ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-white text-sky-800 border-sky-300';
       el.className = `px-6 py-2.5 rounded-full font-black text-sm shadow-xl border-2 backdrop-blur-md animate-notif w-max whitespace-nowrap pointer-events-none ${bg}`;
       el.innerHTML = msg;
-      document.getElementById('notif-container').appendChild(el);
+      container.appendChild(el);
       setTimeout(() => el.remove(), 2400);
     };
 
     window.showScreen = function(id) {
       ['screen-menu', 'screen-game', 'screen-result'].forEach(s => {
         const el = document.getElementById(s);
-        el.classList.add('hidden'); el.classList.remove('opacity-100'); el.classList.add('opacity-0');
+        if(el) { el.classList.add('hidden'); el.classList.remove('opacity-100'); el.classList.add('opacity-0'); }
       });
       const target = document.getElementById(id);
-      target.classList.remove('hidden');
-      setTimeout(() => {
-         target.classList.remove('opacity-0'); target.classList.add('opacity-100');
-         if (id === 'screen-game') target.classList.add('flex');
-      }, 50);
-    };
-
-    window.startGame = function(mode) {
-      document.getElementById('screen-menu').classList.add('hidden');
-      if (mode === 'single') { state.mode = 'single'; initGame(); }
-    };
-
-    window.showLobby = function() {
-      const m = document.getElementById('modal-lobby'); m.classList.remove('hidden'); m.classList.add('flex');
-      setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10);
-    };
-
-    window.hideLobby = function() {
-      const m = document.getElementById('modal-lobby'); m.classList.add('opacity-0'); m.children[0].classList.add('scale-95');
-      setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
-    };
-
-    window.createRoom = async function() {
-      if (!auth || !auth.currentUser) return window.notify('인증 진행 중입니다. 잠시 후 다시 시도하세요.', 'error');
-      state.mode = 'multi'; state.myPlayerId = 'p1';
-      state.roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
-      window.hideLobby(); initGame(); 
-
-      try {
-          const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', state.roomId);
-          await setDoc(roomRef, {
-            turnCount: state.turnCount, sharedPool: state.sharedPool, displayPool: state.displayPool, market: state.market, newsHistory: state.newsHistory,
-            p1: { money: state.money, prof: state.prof, stacks: serializeStacks(state.stacks) },
-            p2: null, chat: [], trade: { isActive: true, p1: {money:0, items:[], accept:false}, p2: {money:0, items:[], accept:false} }
-          });
-          startMultiplayerSync();
-      } catch(e) {
-          console.error(e); window.notify("방 생성 실패 (네트워크 확인 필요)", "error");
+      if(target) {
+        target.classList.remove('hidden');
+        setTimeout(() => { target.classList.remove('opacity-0'); target.classList.add('opacity-100'); if (id === 'screen-game') target.classList.add('flex'); }, 50);
       }
-    };
-
-    window.joinRoom = async function() {
-      if (!auth || !auth.currentUser) return window.notify('인증 진행 중입니다.', 'error');
-      const code = document.getElementById('room-code-input').value.toUpperCase();
-      if(code.length !== 4) return window.notify('4자리 코드를 입력하세요.', 'error');
-      
-      try {
-          const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
-          const snap = await getDoc(roomRef);
-          if(!snap.exists()) return window.notify('존재하지 않는 방입니다.', 'error');
-
-          state.mode = 'multi'; state.myPlayerId = 'p2'; state.roomId = code;
-          const data = snap.data();
-          state.turnCount = data.turnCount; state.sharedPool = data.sharedPool; state.displayPool = data.displayPool; state.market = data.market; state.newsHistory = data.newsHistory || [];
-          state.money = 0; state.stacks = []; state.prof = { farming: {lv:1,exp:0}, mining: {lv:1,exp:0}, woodcraft: {lv:1,exp:0}, cooking: {lv:1,exp:0}, smithing: {lv:1,exp:0} };
-          
-          spawnInitialResources(); window.hideLobby(); window.showScreen('screen-game');
-          document.getElementById('room-info').classList.remove('hidden'); document.getElementById('room-info').classList.add('flex');
-          document.getElementById('display-room-code').innerText = state.roomId;
-          document.getElementById('btn-trade').classList.remove('hidden'); document.getElementById('btn-trade').classList.add('flex');
-          document.getElementById('chat-container').classList.remove('hidden');
-
-          await setDoc(roomRef, { p2: { money: state.money, prof: state.prof, stacks: serializeStacks(state.stacks) } }, { merge: true });
-          startMultiplayerSync(); showSpecialtySelector();
-      } catch (e) {
-          console.error(e); window.notify("입장 실패 (네트워크 확인 필요)", "error");
-      }
-    };
-
-    window.selectSpecialty = function(id) {
-      state.unlockedSpecialty = id;
-      const modal = document.getElementById('modal-specialty');
-      modal.classList.add('opacity-0'); modal.children[0].classList.add('scale-95');
-      setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
-      window.notify(`${SPECIALTY_OPTIONS.find(o=>o.id===id).name} 레시피가 해금되었습니다!`, "success");
-      syncMyState();
     };
 
     window.toggleRecipeModal = function() {
       const m = document.getElementById('modal-recipe');
-      if (m.classList.contains('hidden')) { m.classList.remove('hidden'); m.classList.add('flex'); renderRecipeList(); setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10); }
+      if (m.classList.contains('hidden')) { m.classList.remove('hidden'); m.classList.add('flex'); window.renderRecipeList(); setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10); }
       else { m.classList.add('opacity-0'); m.children[0].classList.add('scale-95'); setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300); }
     };
 
     window.toggleNewsModal = function() {
       const m = document.getElementById('modal-news');
-      if (m.classList.contains('hidden')) { m.classList.remove('hidden'); m.classList.add('flex'); renderNewsList(); setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10); }
+      if (m.classList.contains('hidden')) { m.classList.remove('hidden'); m.classList.add('flex'); window.renderNewsList(); setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10); }
       else { m.classList.add('opacity-0'); m.children[0].classList.add('scale-95'); setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300); }
     };
 
     window.toggleOpponentView = function() {
-      if (state.mode !== 'multi') return;
-      if (!state.oppData) return window.notify("상대방의 데이터가 동기화되지 않았습니다.", "info");
-      state.viewingOpponent = !state.viewingOpponent;
+      if (window.state.mode !== 'multi') return;
+      if (!window.state.oppData) return window.notify("상대방의 데이터가 동기화되지 않았습니다.", "info");
+      window.state.viewingOpponent = !window.state.viewingOpponent;
       const overlay = document.getElementById('opponent-overlay');
-      if (state.viewingOpponent) { overlay.classList.remove('hidden'); overlay.classList.add('flex'); document.getElementById('overlay-opp-score').innerText = state.oppData.money; }
+      if (window.state.viewingOpponent) { overlay.classList.remove('hidden'); overlay.classList.add('flex'); document.getElementById('overlay-opp-score').innerText = window.state.oppData.money; }
       else { overlay.classList.add('hidden'); overlay.classList.remove('flex'); }
-      renderAll();
+      window.renderAll();
     };
 
-    window.toggleTradeModal = function() {
-      const m = document.getElementById('modal-trade');
-      if(m.classList.contains('hidden')) { m.classList.remove('hidden'); m.classList.add('flex'); renderTradeUI(); setTimeout(()=> { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10); } 
-      else { m.classList.add('opacity-0'); m.children[0].classList.add('scale-95'); setTimeout(()=> { m.classList.add('hidden'); m.classList.remove('flex'); }, 300); }
+    window.showNewsSplash = function(title, msg, type) {
+      const s = document.getElementById('splash-news'); const c = document.getElementById('splash-news-content');
+      if(!s || !c) return;
+      document.getElementById('splash-title').innerText = title; document.getElementById('splash-msg').innerText = msg;
+      const bColor = type === 'up' ? 'border-emerald-400' : 'border-rose-400';
+      c.className = `bg-white/95 backdrop-blur-xl border-4 ${bColor} p-8 rounded-[3rem] shadow-[0_0_50px_rgba(245,158,11,0.3)] text-center transform scale-90 transition-transform duration-500 max-w-2xl`;
+      s.classList.remove('hidden');
+      setTimeout(() => { s.classList.remove('opacity-0'); c.classList.remove('scale-90'); }, 50);
+      setTimeout(() => { s.classList.add('opacity-0'); c.classList.add('scale-90'); setTimeout(() => s.classList.add('hidden'), 500); }, 3500);
     };
 
-    window.adjTradeMoney = function(amt) {
-      const newM = state.localTradeOffer.money + amt;
-      if (newM < 0 || newM > state.money) return window.notify("보유한 골드를 초과할 수 없습니다.", "error");
-      state.localTradeOffer.money = newM; renderTradeUI();
-    };
-
-    window.addToOffer = function(itemId) { state.localTradeOffer.items.push(itemId); renderTradeUI(); };
-    window.removeFromOffer = function(idx) { state.localTradeOffer.items.splice(idx, 1); renderTradeUI(); };
-
-    window.proposeTrade = async function() {
-      const lt = state.localTradeOffer;
-      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', state.roomId);
-      await updateDoc(roomRef, {
-         [`trade.${state.myPlayerId}.items`]: lt.items, [`trade.${state.myPlayerId}.money`]: lt.money,
-         [`trade.${state.myPlayerId}.accept`]: false, [`trade.${state.myPlayerId === 'p1'?'p2':'p1'}.accept`]: false
-      });
-      window.notify("제안을 성공적으로 올렸습니다.", "success");
-    };
-
-    window.acceptTrade = async function() {
-      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', state.roomId);
-      await updateDoc(roomRef, { [`trade.${state.myPlayerId}.accept`]: true });
-    };
-
-    window.toggleChat = function() {
-      const c = document.getElementById('chat-container'); const ic = document.getElementById('chat-icon');
-      state.isChatOpen = !state.isChatOpen;
-      if (state.isChatOpen) { c.classList.remove('chat-closed'); c.classList.add('chat-open'); ic.classList.replace('ph-caret-up', 'ph-caret-down'); document.getElementById('chat-unread').classList.add('hidden'); } 
-      else { c.classList.remove('chat-open'); c.classList.add('chat-closed'); ic.classList.replace('ph-caret-down', 'ph-caret-up'); }
-    };
-
-    window.sendChat = async function() {
-      const input = document.getElementById('chat-input'); const text = input.value.trim();
-      if (!text || state.mode !== 'multi') return;
-      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', state.roomId);
-      await updateDoc(roomRef, { chat: arrayUnion({ sender: state.myPlayerId, msg: text, time: Date.now() }) });
-      input.value = '';
-    };
-
-    window.handlePoolClick = function(poolIdx) {
-      if (state.mode === 'multi') {
-         const isP1Turn = state.turnCount % 2 !== 0;
-         if ((state.myPlayerId === 'p1' && !isP1Turn) || (state.myPlayerId === 'p2' && isP1Turn)) return window.notify("상대방의 턴입니다.", "error");
-      }
-      if (state.viewingOpponent) return window.notify("내 영지로 돌아와주세요.", "error");
-
-      const picked = state.displayPool[poolIdx];
-      const boardEl = document.getElementById('board-area');
-      const cx = boardEl.clientWidth / 2 - 40; const cy = boardEl.clientHeight / 2 - 50;
-      state.stacks.push({ id: `s${nextStackId++}`, x: cx, y: cy, cards: [picked], crafting: null });
-      state.displayPool[poolIdx] = state.sharedPool.shift() || 'wood';
-      
-      evaluatePool(); processTurnEnd();
-    };
-
-    window.rerollPool = function() {
-      if (state.viewingOpponent) return;
-      state.displayPool = state.displayPool.map(() => state.sharedPool.shift() || 'wood');
-      window.notify("선택지를 초기화했습니다 🔄", "action");
-      evaluatePool(); renderAll(); syncGlobalState();
-    };
-
-    // 더미데이터 클린업 (방장/방장이 아니어도 방 파괴로 단순 처리)
-    window.cleanupAndLeave = async function() {
-      if (state.mode === 'multi' && state.roomId && auth && auth.currentUser) {
-         try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', state.roomId)); } catch(e) {}
-      }
-      location.reload();
-    };
-
-    // 탭 닫힘 감지
-    window.addEventListener("beforeunload", (e) => {
-        if (state.mode === 'multi' && state.roomId && auth && auth.currentUser) {
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', state.roomId);
-            deleteDoc(roomRef).catch(()=>{});
-        }
-    });
-
-    // 툴팁
     window.showTooltip = function(id, e) {
-      if (state.draggingStack || state.viewingOpponent) return;
-      const rel = RECIPES.filter(r => (!r.isSpecialty || r.unlockId === state.unlockedSpecialty) && (r.inputs.includes(id) || r.results.includes(id)));
+      if (window.state.draggingStack || window.state.viewingOpponent) return;
+      const rel = RECIPES.filter(r => (!r.isSpecialty || r.unlockId === window.state.unlockedSpecialty) && (r.inputs.includes(id) || r.results.includes(id)));
       if(rel.length === 0) return;
       const tt = document.getElementById('tooltip'); const content = document.getElementById('tooltip-content');
       content.innerHTML = rel.map(r => {
@@ -671,45 +528,94 @@
         const rText = r.results.map(res => `<span class="${TILES[res].textColor} font-bold bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">${TILES[res].name}</span>`).join(', ');
         return `<div class="flex flex-col gap-1 text-[11px] bg-slate-50 p-2.5 rounded-xl border border-slate-200 mb-1 shadow-sm"><div class="flex items-center gap-1">${iText}</div><div class="flex items-center gap-2 mt-1"><i class="ph-bold ph-arrow-elbow-down-right text-sky-400"></i><span class="bg-sky-100 text-sky-600 font-black px-1.5 rounded">${r.turns}턴</span>${rText}</div></div>`;
       }).join('');
-      tt.classList.remove('hidden'); tt.style.left = (e.clientX + 15) + 'px'; tt.style.top = (e.clientY + 15) + 'px';
+      tt.classList.remove('hidden'); window.moveTooltip(e);
     };
-    window.hideTooltip = function() { document.getElementById('tooltip').classList.add('hidden'); };
-    window.moveTooltip = function(e) { const tt = document.getElementById('tooltip'); tt.style.left = (e.clientX + 15) + 'px'; tt.style.top = (e.clientY + 15) + 'px'; };
+    window.hideTooltip = function() { const tt = document.getElementById('tooltip'); if(tt) tt.classList.add('hidden'); };
+    window.moveTooltip = function(e) { const tt = document.getElementById('tooltip'); if(tt){ tt.style.left = (e.clientX + 15) + 'px'; tt.style.top = (e.clientY + 15) + 'px'; } };
 
-    // --- 코어 함수들 ---
-    async function initFirebase() {
-        try {
-            const app = initializeApp(firebaseConfig); auth = getAuth(app); db = getFirestore(app);
-            onAuthStateChanged(auth, (u) => { user = u; });
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
-            else await signInAnonymously(auth);
-        } catch(e) { console.warn("Firebase Auth Error", e); }
-    }
+    // --- App Flow ---
+    window.startGame = function(mode) {
+      document.getElementById('screen-menu').classList.add('hidden');
+      if (mode === 'single') { window.state.mode = 'single'; window.initGame(); }
+    };
 
-    initFirebase();
+    window.showLobby = function() {
+      const m = document.getElementById('modal-lobby'); m.classList.remove('hidden'); m.classList.add('flex');
+      setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10);
+    };
+    window.hideLobby = function() {
+      const m = document.getElementById('modal-lobby'); m.classList.add('opacity-0'); m.children[0].classList.add('scale-95');
+      setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
+    };
 
-    function initGame() {
-      state.turnCount = 1; state.money = 0; state.stacks = []; nextStackId = 1; state.viewingOpponent = false;
-      state.prof = { farming: {lv:1,exp:0}, mining: {lv:1,exp:0}, woodcraft: {lv:1,exp:0}, cooking: {lv:1,exp:0}, smithing: {lv:1,exp:0} };
+    window.createRoom = async function() {
+      if (!user || !isFirebaseReady) return window.notify('DB 접속 대기 중입니다. 잠시 후 다시 시도하세요.', 'error');
+      window.state.mode = 'multi'; window.state.myPlayerId = 'p1';
+      window.state.roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
       
-      state.market = {};
-      SELLABLE_ITEMS.forEach(id => { state.market[id] = { currentPrice: TILES[id].basePrice, previousPrice: TILES[id].basePrice, trend: 0, supply: 0, pendingSupply: 0 }; });
-      state.newsHistory = [{ turn: 1, msg: "시장이 개장되었습니다. 매각 시 다음 턴에 시세가 하락합니다.", type: "up" }];
+      window.hideLobby(); window.initGame(); 
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
+      await setDoc(roomRef, {
+        turnCount: window.state.turnCount, sharedPool: window.state.sharedPool, displayPool: window.state.displayPool, market: window.state.market, newsHistory: window.state.newsHistory,
+        p1: { money: window.state.money, prof: window.state.prof, stacks: serializeStacks(window.state.stacks) },
+        p2: null, chat: [], trade: { isActive: true, p1: {money:0, items:[], accept:false}, p2: {money:0, items:[], accept:false} }
+      });
+      startSync(roomRef);
+    };
+
+    window.joinRoom = async function() {
+      if (!user || !isFirebaseReady) return window.notify('DB 접속 대기 중입니다.', 'error');
+      const code = document.getElementById('room-code-input').value.toUpperCase();
+      if(code.length !== 4) return window.notify('4자리 코드를 입력하세요.', 'error');
+      
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
+      const snap = await getDoc(roomRef);
+      if(!snap.exists()) return window.notify('존재하지 않는 방입니다.', 'error');
+
+      window.state.mode = 'multi'; window.state.myPlayerId = 'p2'; window.state.roomId = code;
+      const data = snap.data();
+      window.state.turnCount = data.turnCount; window.state.sharedPool = data.sharedPool; window.state.displayPool = data.displayPool; window.state.market = data.market; window.state.newsHistory = data.newsHistory || [];
+      window.state.money = 0; window.state.stacks = []; window.state.prof = { farming: {lv:1,exp:0}, mining: {lv:1,exp:0}, woodcraft: {lv:1,exp:0}, cooking: {lv:1,exp:0}, smithing: {lv:1,exp:0} };
+      
+      spawnInitialResources(); window.hideLobby(); window.showScreen('screen-game');
+      document.getElementById('room-info').classList.remove('hidden'); document.getElementById('room-info').classList.add('flex');
+      document.getElementById('display-room-code').innerText = window.state.roomId;
+      document.getElementById('btn-trade').classList.remove('hidden'); document.getElementById('btn-trade').classList.add('flex');
+      document.getElementById('chat-container').classList.remove('hidden');
+
+      await setDoc(roomRef, { p2: { money: window.state.money, prof: window.state.prof, stacks: serializeStacks(window.state.stacks) } }, { merge: true });
+      startSync(roomRef); window.showSpecialtySelector();
+    };
+
+    window.cleanupAndLeave = async function() {
+      if (window.state.mode === 'multi' && window.state.roomId && user) {
+         try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId)); } catch(e) {}
+      }
+      location.reload();
+    };
+
+    window.initGame = function() {
+      window.state.turnCount = 1; window.state.money = 0; window.state.stacks = []; window.nextStackId = 1; window.state.viewingOpponent = false;
+      window.state.prof = { farming: {lv:1,exp:0}, mining: {lv:1,exp:0}, woodcraft: {lv:1,exp:0}, cooking: {lv:1,exp:0}, smithing: {lv:1,exp:0} };
+      
+      window.state.market = {};
+      SELLABLE_ITEMS.forEach(id => { window.state.market[id] = { currentPrice: TILES[id].basePrice, previousPrice: TILES[id].basePrice, trend: 0, supply: 0, pendingSupply: 0 }; });
+      window.state.newsHistory = [{ turn: 1, msg: "시장이 개장되었습니다. 매각 시 다음 턴에 시세가 하락합니다.", type: "up" }];
 
       const poolItems = ['wood', 'stone', 'seed', 'water', 'fire'];
       const fullPool = Array.from({length: 200}, () => poolItems[Math.floor(Math.random() * poolItems.length)]);
-      state.sharedPool = fullPool.slice(4); state.displayPool = fullPool.slice(0, 4);
+      window.state.sharedPool = fullPool.slice(4); window.state.displayPool = fullPool.slice(0, 4);
 
-      spawnInitialResources(); evaluatePool(); renderAll(); window.showScreen('screen-game');
+      spawnInitialResources(); window.evaluatePool(); window.renderAll(); window.showScreen('screen-game');
       
-      if (state.mode === 'multi') {
+      if (window.state.mode === 'multi') {
         document.getElementById('room-info').classList.remove('hidden'); document.getElementById('room-info').classList.add('flex');
-        document.getElementById('display-room-code').innerText = state.roomId;
+        document.getElementById('display-room-code').innerText = window.state.roomId;
         document.getElementById('btn-trade').classList.remove('hidden'); document.getElementById('btn-trade').classList.add('flex');
         document.getElementById('chat-container').classList.remove('hidden');
       }
-      showSpecialtySelector();
-    }
+      window.showSpecialtySelector();
+    };
 
     function spawnInitialResources() {
       const boardEl = document.getElementById('board-area');
@@ -718,11 +624,11 @@
       const starts = ['wood', 'stone', 'seed', 'water', 'fire', 'villager'];
       starts.forEach((id, idx) => {
          const angle = (idx / starts.length) * Math.PI * 2; const r = 120;
-         state.stacks.push({ id: `s${nextStackId++}`, x: cx + Math.cos(angle)*r - 30, y: cy + Math.sin(angle)*r - 50, cards: [id], crafting: null });
+         window.state.stacks.push({ id: `s${window.nextStackId++}`, x: cx + Math.cos(angle)*r - 30, y: cy + Math.sin(angle)*r - 50, cards: [id], crafting: null });
       });
     }
 
-    function showSpecialtySelector() {
+    window.showSpecialtySelector = function() {
       const m = document.getElementById('modal-specialty'); const c = document.getElementById('specialty-options');
       c.innerHTML = SPECIALTY_OPTIONS.map(opt => `
         <div onclick="window.selectSpecialty('${opt.id}')" class="bg-slate-800/80 hover:bg-slate-700/90 border-2 border-slate-600 hover:border-amber-400 p-8 rounded-3xl cursor-pointer transition-all transform hover:-translate-y-2 flex flex-col items-center shadow-xl group">
@@ -731,19 +637,51 @@
         </div>`).join('');
       m.classList.remove('hidden'); m.classList.add('flex');
       setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10);
-    }
+    };
 
-    function evaluatePool() {
+    window.selectSpecialty = function(id) {
+      window.state.unlockedSpecialty = id;
+      const modal = document.getElementById('modal-specialty');
+      modal.classList.add('opacity-0'); modal.children[0].classList.add('scale-95');
+      setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+      window.notify(`${SPECIALTY_OPTIONS.find(o=>o.id===id).name} 레시피가 해금되었습니다!`, "success");
+      syncMyState();
+    };
+
+    window.evaluatePool = function() {
       const counts = {}; let maxFreq = 0;
-      state.displayPool.forEach(id => { counts[id] = (counts[id] || 0) + 1; if (counts[id] > maxFreq) maxFreq = counts[id]; });
+      window.state.displayPool.forEach(id => { counts[id] = (counts[id] || 0) + 1; if (counts[id] > maxFreq) maxFreq = counts[id]; });
       const rerollBtn = document.getElementById('btn-reroll-pool');
-      if (maxFreq === 4) { window.notify("자동 갱신됩니다 🔄", "info"); state.displayPool = state.displayPool.map(() => state.sharedPool.shift() || 'wood'); evaluatePool(); } 
+      if (maxFreq === 4) { window.notify("자동 갱신됩니다 🔄", "info"); window.state.displayPool = window.state.displayPool.map(() => window.state.sharedPool.shift() || 'wood'); window.evaluatePool(); } 
       else if (maxFreq === 3) { rerollBtn.classList.remove('hidden'); rerollBtn.classList.add('flex'); } 
       else { rerollBtn.classList.add('hidden'); rerollBtn.classList.remove('flex'); }
-    }
+    };
 
-    function processTurnEnd() {
-      state.stacks.forEach(stack => {
+    window.rerollPool = function() {
+      if (window.state.viewingOpponent) return;
+      window.state.displayPool = window.state.displayPool.map(() => window.state.sharedPool.shift() || 'wood');
+      window.notify("선택지를 초기화했습니다 🔄", "action");
+      window.evaluatePool(); window.renderAll(); syncGlobalState();
+    };
+
+    window.handlePoolClick = function(poolIdx) {
+      if (window.state.mode === 'multi') {
+         const isP1Turn = window.state.turnCount % 2 !== 0;
+         if ((window.state.myPlayerId === 'p1' && !isP1Turn) || (window.state.myPlayerId === 'p2' && isP1Turn)) return window.notify("상대방의 턴입니다. 내 영지 정리만 가능합니다.", "error");
+      }
+      if (window.state.viewingOpponent) return window.notify("내 영지로 돌아와주세요.", "error");
+
+      const picked = window.state.displayPool[poolIdx];
+      const boardEl = document.getElementById('board-area');
+      const cx = boardEl.clientWidth / 2 - 40; const cy = boardEl.clientHeight / 2 - 50;
+      window.state.stacks.push({ id: `s${window.nextStackId++}`, x: cx, y: cy, cards: [picked], crafting: null });
+      window.state.displayPool[poolIdx] = window.state.sharedPool.shift() || 'wood';
+      
+      window.evaluatePool(); window.processTurnEnd();
+    };
+
+    window.processTurnEnd = function() {
+      window.state.stacks.forEach(stack => {
         if (stack.crafting) {
           stack.crafting.left--;
           if (stack.crafting.left <= 0) {
@@ -751,25 +689,25 @@
             stack.cards = [...recipe.results]; stack.crafting = null;
             window.notify(`${recipe.desc} 완성! ✨`, "success");
             if (recipe.category && recipe.category !== 'general') {
-               state.prof[recipe.category].exp += 1;
-               if(state.prof[recipe.category].exp >= 3){
-                  state.prof[recipe.category].lv += 1; state.prof[recipe.category].exp = 0;
-                  window.notify(`${CAT_INFO[recipe.category].name} 레벨업 (Lv.${state.prof[recipe.category].lv}) 🎉`, 'action');
+               window.state.prof[recipe.category].exp += 1;
+               if(window.state.prof[recipe.category].exp >= 3){
+                  window.state.prof[recipe.category].lv += 1; window.state.prof[recipe.category].exp = 0;
+                  window.notify(`${CAT_INFO[recipe.category].name} 레벨업 (Lv.${window.state.prof[recipe.category].lv}) 🎉`, 'action');
                }
             }
-            checkAndSetRecipe(stack);
+            window.checkAndSetRecipe(stack);
           }
         }
       });
 
       let ev = null;
-      if (state.turnCount % 5 === 0 && Math.random() < 0.4) {
+      if (window.state.turnCount % 5 === 0 && Math.random() < 0.4) {
         ev = MARKET_EVENTS[Math.floor(Math.random() * MARKET_EVENTS.length)];
-        state.newsHistory.unshift({ turn: state.turnCount + 1, msg: ev.msg, type: ev.type });
+        window.state.newsHistory.unshift({ turn: window.state.turnCount + 1, msg: ev.msg, type: ev.type });
         window.showNewsSplash(ev.title, ev.msg, ev.type);
       }
       SELLABLE_ITEMS.forEach(id => {
-        const m = state.market[id]; m.previousPrice = m.currentPrice;
+        const m = window.state.market[id]; m.previousPrice = m.currentPrice;
         m.supply += m.pendingSupply; m.pendingSupply = 0; m.supply *= 0.85; 
         const sf = Math.max(0.2, 1 - (m.supply * 0.08)); const n = 1 + (Math.random() * 0.1 - 0.05) * TILES[id].volatility;
         let tp = Math.floor(TILES[id].basePrice * sf * n);
@@ -778,57 +716,74 @@
         if (m.currentPrice < 1) m.currentPrice = 1; m.trend = m.currentPrice - m.previousPrice;
       });
 
-      if (state.turnCount >= MAX_TURNS) {
-        document.getElementById('result-score').innerText = state.money;
+      if (window.state.turnCount >= MAX_TURNS) {
+        document.getElementById('result-score').innerText = window.state.money;
         const res = document.getElementById('result-text');
-        if(state.money < 5000) res.innerText = "평범한 상인 🛒";
-        else if(state.money < 15000) res.innerText = "성공한 사업가 💼";
+        if(window.state.money < 5000) res.innerText = "평범한 상인 🛒";
+        else if(window.state.money < 15000) res.innerText = "성공한 사업가 💼";
         else res.innerText = "하늘 섬의 만수르 💎";
         window.showScreen('screen-result'); return;
       }
       
-      state.turnCount++; renderAll(); syncMyState(); syncGlobalState();
-    }
+      window.state.turnCount++; window.renderAll(); syncMyState(); syncGlobalState();
+    };
 
-    function checkAndSetRecipe(stack) {
+    window.checkAndSetRecipe = function(stack) {
       stack.crafting = null; 
       if (stack.cards.length < 2) return;
       const currentSorted = [...stack.cards].sort().join(',');
-      const matched = RECIPES.filter(r => !r.isSpecialty || r.unlockId === state.unlockedSpecialty).find(r => [...r.inputs].sort().join(',') === currentSorted);
+      const matched = RECIPES.filter(r => !r.isSpecialty || r.unlockId === window.state.unlockedSpecialty).find(r => [...r.inputs].sort().join(',') === currentSorted);
       if (matched) stack.crafting = { recipeId: matched.id, left: matched.turns, total: matched.turns };
-    }
+    };
+
+    window.getFinalPrice = function(itemId) {
+      if (!window.state.market[itemId]) return 0;
+      const base = window.state.market[itemId].currentPrice; const cat = TILES[itemId].category;
+      return cat && window.state.prof[cat] ? Math.floor(base * (1 + (window.state.prof[cat].lv - 1) * 0.15)) : base;
+    };
 
     // --- 멀티플레이 통신 ---
-    function startMultiplayerSync() {
-      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', state.roomId);
-      unsubSnapshot = onSnapshot(roomRef, (docSnap) => {
+    function startSync(roomRef) {
+      window.unsubSnapshot = onSnapshot(roomRef, (docSnap) => {
         if (!docSnap.exists()) return;
         const data = docSnap.data();
         
-        if (data.turnCount > state.turnCount) {
-           state.turnCount = data.turnCount; state.market = data.market; state.sharedPool = data.sharedPool; state.displayPool = data.displayPool;
-           if(data.newsHistory) state.newsHistory = data.newsHistory;
+        if (data.turnCount > window.state.turnCount) {
+           window.state.turnCount = data.turnCount; window.state.market = data.market; window.state.sharedPool = data.sharedPool; window.state.displayPool = data.displayPool;
+           if(data.newsHistory) window.state.newsHistory = data.newsHistory;
            window.notify("턴이 갱신되었습니다.", "info");
         }
         
-        const oppId = state.myPlayerId === 'p1' ? 'p2' : 'p1';
+        const oppId = window.state.myPlayerId === 'p1' ? 'p2' : 'p1';
         if (data[oppId]) {
-          state.oppData = data[oppId];
+          window.state.oppData = data[oppId];
           document.getElementById('opponent-panel').classList.remove('hidden'); 
-          if(state.viewingOpponent) document.getElementById('overlay-opp-score').innerText = state.oppData.money;
+          if(window.state.viewingOpponent) document.getElementById('overlay-opp-score').innerText = window.state.oppData.money;
         }
 
         if (data.trade) {
-           state.trade = data.trade; renderTradeUI();
-           if (data.trade.p1.accept && data.trade.p2.accept && state.myPlayerId === 'p1') executeTradeInDB(roomRef, data);
+           window.state.trade = data.trade; window.renderTradeUI();
+           if (data.trade.p1.accept && data.trade.p2.accept && window.state.myPlayerId === 'p1') executeTradeInDB(roomRef, data);
         }
 
-        if (data.chat && data.chat.length > state.chat.length) {
-           renderChat(data.chat);
-           if (!state.isChatOpen && data.chat[data.chat.length-1].sender !== state.myPlayerId) document.getElementById('chat-unread').classList.remove('hidden');
+        if (data.chat && data.chat.length > window.state.chat.length) {
+           window.renderChat(data.chat);
+           if (!window.state.isChatOpen && data.chat[data.chat.length-1].sender !== window.state.myPlayerId) document.getElementById('chat-unread').classList.remove('hidden');
         }
-        renderAll();
+        window.renderAll();
       }, (error) => console.error("Sync Error:", error));
+    }
+
+    async function syncMyState() {
+      if (window.state.mode !== 'multi' || !user) return;
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
+      await updateDoc(roomRef, { [window.state.myPlayerId]: { money: window.state.money, prof: window.state.prof, stacks: serializeStacks(window.state.stacks) } });
+    }
+
+    async function syncGlobalState() {
+      if (window.state.mode !== 'multi' || !user) return;
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
+      await updateDoc(roomRef, { turnCount: window.state.turnCount, sharedPool: window.state.sharedPool, displayPool: window.state.displayPool, market: window.state.market, newsHistory: window.state.newsHistory });
     }
 
     async function executeTradeInDB(roomRef, data) {
@@ -843,8 +798,8 @@
            'p1.money': newP1Money, 'p1.stacks': newP1Stacks, 'p2.money': newP2Money, 'p2.stacks': newP2Stacks,
            'trade.p1': {items:[], money:0, accept:false}, 'trade.p2': {items:[], money:0, accept:false}
        });
-       window.notify("거래 성사! 보드를 확인하세요 🎁", "success");
-       state.localTradeOffer = { money: 0, items: [] };
+       window.notify("거래 성사! 보드와 골드를 확인하세요 🎁", "success");
+       window.state.localTradeOffer = { money: 0, items: [] };
     }
 
     function removeItemsFromStacks(stacks, itemsToRemove) {
@@ -856,33 +811,21 @@
        return newStacks.filter(s => s.cards.length > 0);
     }
 
-    async function syncMyState() {
-      if (state.mode !== 'multi') return;
-      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', state.roomId);
-      await setDoc(roomRef, { [state.myPlayerId]: { money: state.money, prof: state.prof, stacks: serializeStacks(state.stacks) } }, { merge: true });
-    }
-
-    async function syncGlobalState() {
-      if (state.mode !== 'multi') return;
-      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', state.roomId);
-      await updateDoc(roomRef, { turnCount: state.turnCount, sharedPool: state.sharedPool, displayPool: state.displayPool, market: state.market, newsHistory: state.newsHistory });
-    }
-
     function serializeStacks(stacks) {
        const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
        return stacks.map(s => ({ xRatio: s.x / w, yRatio: s.y / h, cards: s.cards, crafting: s.crafting ? true : false }));
     }
 
-    // --- 드래그 이벤트 (바닐라 JS) ---
+    // --- 드래그 이벤트 ---
     const boardArea = document.getElementById('board-area');
     boardArea.addEventListener('pointerdown', e => {
-      if (state.viewingOpponent) return;
+      if (window.state.viewingOpponent) return;
       const cardEl = e.target.closest('.game-card'); if (!cardEl) return;
       window.hideTooltip();
       const stackId = cardEl.dataset.stackId; const cardIdx = parseInt(cardEl.dataset.cardIdx);
-      const sIdx = state.stacks.findIndex(s => s.id === stackId); if (sIdx === -1) return;
+      const sIdx = window.state.stacks.findIndex(s => s.id === stackId); if (sIdx === -1) return;
 
-      const stack = state.stacks[sIdx];
+      const stack = window.state.stacks[sIdx];
       if (stack.crafting && stack.crafting.left < stack.crafting.total) return window.notify("턴을 넘긴 제작은 취소 불가 ⏳", "error");
 
       stack.crafting = null; 
@@ -890,19 +833,19 @@
       const ox = e.clientX - rect.left; const oy = e.clientY - rect.top;
 
       const detached = stack.cards.splice(cardIdx);
-      if (stack.cards.length === 0) state.stacks.splice(sIdx, 1); else checkAndSetRecipe(stack);
+      if (stack.cards.length === 0) window.state.stacks.splice(sIdx, 1); else window.checkAndSetRecipe(stack);
 
-      state.draggingStack = { id: `drag_${Date.now()}`, x: e.clientX - br.left - ox, y: e.clientY - br.top - oy, cards: detached };
-      dragData = { ox, oy };
-      renderAll(); boardArea.setPointerCapture(e.pointerId);
+      window.state.draggingStack = { id: `drag_${Date.now()}`, x: e.clientX - br.left - ox, y: e.clientY - br.top - oy, cards: detached };
+      window.dragData = { ox, oy };
+      window.renderAll(); boardArea.setPointerCapture(e.pointerId);
     });
 
     boardArea.addEventListener('pointermove', e => {
-      if (!state.draggingStack) return;
+      if (!window.state.draggingStack) return;
       const br = boardArea.getBoundingClientRect();
-      state.draggingStack.x = e.clientX - br.left - dragData.ox; state.draggingStack.y = e.clientY - br.top - dragData.oy;
+      window.state.draggingStack.x = e.clientX - br.left - window.dragData.ox; window.state.draggingStack.y = e.clientY - br.top - window.dragData.oy;
       const el = document.getElementById('dragging-stack');
-      if (el) { el.style.left = `${state.draggingStack.x}px`; el.style.top = `${state.draggingStack.y}px`; }
+      if (el) { el.style.left = `${window.state.draggingStack.x}px`; el.style.top = `${window.state.draggingStack.y}px`; }
 
       const mz = document.getElementById('market-zone');
       if (mz) {
@@ -913,93 +856,93 @@
     });
 
     boardArea.addEventListener('pointerup', async e => {
-      if (!state.draggingStack) return;
+      if (!window.state.draggingStack) return;
       boardArea.releasePointerCapture(e.pointerId);
       document.getElementById('market-zone').classList.remove('market-zone-active');
 
       const mz = document.getElementById('market-zone'); const mRect = mz.getBoundingClientRect();
       if (e.clientX >= mRect.left && e.clientX <= mRect.right && e.clientY >= mRect.top && e.clientY <= mRect.bottom) {
           let earned = 0, success = false, remains = [];
-          state.draggingStack.cards.forEach(cardId => {
-            const m = state.market[cardId];
+          window.state.draggingStack.cards.forEach(cardId => {
+            const m = window.state.market[cardId];
             if (m && TILES[cardId].basePrice > 0) { earned += window.getFinalPrice(cardId); m.pendingSupply += 1; success = true; } 
             else remains.push(cardId);
           });
-          if (success) { state.money += earned; window.notify(`매각 예약됨! <span class="text-amber-500 font-black">+${earned} G</span>`, "action"); }
+          if (success) { window.state.money += earned; window.notify(`매각 예약됨! 턴 종료 시 반영됩니다. <span class="text-amber-500 font-black">+${earned} G</span>`, "action"); }
           else window.notify("시장에서 안 사는 물건입니다 ❌", "error");
 
-          if (remains.length > 0) state.stacks.push({ id: `s${nextStackId++}`, x: state.draggingStack.x - 50, y: state.draggingStack.y - 100, cards: remains, crafting: null });
-          state.draggingStack = null; dragData = null; renderAll(); syncMyState(); return;
+          if (remains.length > 0) window.state.stacks.push({ id: `s${window.nextStackId++}`, x: window.state.draggingStack.x - 50, y: window.state.draggingStack.y - 100, cards: remains, crafting: null });
+          window.state.draggingStack = null; window.dragData = null; window.renderAll(); syncMyState(); return;
       }
 
       let ts = null; let minD = 60; 
-      for (let s of state.stacks) {
-        const dist = Math.sqrt(Math.pow(s.x - state.draggingStack.x, 2) + Math.pow(s.y - state.draggingStack.y, 2));
+      for (let s of window.state.stacks) {
+        const dist = Math.sqrt(Math.pow(s.x - window.state.draggingStack.x, 2) + Math.pow(s.y - window.state.draggingStack.y, 2));
         if (dist < minD) { minD = dist; ts = s; }
       }
 
       if (ts) {
         if (ts.crafting && ts.crafting.left < ts.crafting.total) {
           window.notify("제작 중인 곳에 겹칠 수 없습니다 ❌", "error");
-          state.stacks.push({ id: `s${nextStackId++}`, x: state.draggingStack.x, y: state.draggingStack.y, cards: state.draggingStack.cards, crafting: null });
+          window.state.stacks.push({ id: `s${window.nextStackId++}`, x: window.state.draggingStack.x, y: window.state.draggingStack.y, cards: window.state.draggingStack.cards, crafting: null });
         } else {
-          ts.cards.push(...state.draggingStack.cards); ts.crafting = null; checkAndSetRecipe(ts);
+          ts.cards.push(...window.state.draggingStack.cards); ts.crafting = null; window.checkAndSetRecipe(ts);
         }
       } else {
-        state.stacks.push({ id: `s${nextStackId++}`, x: state.draggingStack.x, y: state.draggingStack.y, cards: state.draggingStack.cards, crafting: null });
-        checkAndSetRecipe(state.stacks[state.stacks.length - 1]);
+        window.state.stacks.push({ id: `s${window.nextStackId++}`, x: window.state.draggingStack.x, y: window.state.draggingStack.y, cards: window.state.draggingStack.cards, crafting: null });
+        window.checkAndSetRecipe(window.state.stacks[window.state.stacks.length - 1]);
       }
-      state.draggingStack = null; dragData = null; renderAll(); syncMyState();
+      window.state.draggingStack = null; window.dragData = null; window.renderAll(); syncMyState();
     });
 
-    // --- 렌더링 시스템 ---
-    function renderAll() {
-      document.getElementById('score').innerText = state.money;
-      if (state.mode === 'multi') {
-         const isMyTurn = (state.myPlayerId === 'p1' && state.turnCount % 2 !== 0) || (state.myPlayerId === 'p2' && state.turnCount % 2 === 0);
+    // --- UI 그리기 ---
+    window.renderAll = function() {
+      document.getElementById('score').innerText = window.state.money;
+      if (window.state.mode === 'multi') {
+         const isMyTurn = (window.state.myPlayerId === 'p1' && window.state.turnCount % 2 !== 0) || (window.state.myPlayerId === 'p2' && window.state.turnCount % 2 === 0);
          document.getElementById('turn-status').innerText = isMyTurn ? "진행 턴 (내 차례!)" : "진행 턴 (상대 대기중)";
          document.getElementById('turn-status').className = isMyTurn ? "text-[10px] font-black text-sky-500 uppercase text-center" : "text-[10px] font-black text-slate-400 uppercase text-center";
-      } else document.getElementById('turn-count').innerText = state.turnCount;
+      } else document.getElementById('turn-count').innerText = window.state.turnCount;
 
-      document.getElementById('ui-shared-pool').innerHTML = state.displayPool.map((id, i) => {
+      document.getElementById('ui-shared-pool').innerHTML = window.state.displayPool.map((id, i) => {
         const t = TILES[id];
         return `<div onclick="window.handlePoolClick(${i})" onmouseenter="window.showTooltip('${id}', event)" onmouseleave="window.hideTooltip()" onmousemove="window.moveTooltip(event)" class="w-12 h-16 rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer border-2 bg-white hover:scale-105 shadow-sm border-slate-200"><div class="${t.textColor} drop-shadow-sm mb-1">${t.icon.replace('text-3xl', 'text-xl')}</div><span class="text-[9px] font-black ${t.textColor}">${t.name}</span></div>`;
       }).join('');
 
-      const targetStacks = (state.viewingOpponent && state.oppData) ? state.oppData.stacks.map(s => ({...s, x: s.xRatio * (document.getElementById('board-area').clientWidth||800), y: s.yRatio * (document.getElementById('board-area').clientHeight||600)})) : state.stacks;
-      let html = targetStacks.map(stack => renderStackDOM(stack, false, state.viewingOpponent)).join('');
-      if (state.draggingStack && !state.viewingOpponent) html += renderStackDOM(state.draggingStack, true);
+      const targetStacks = (window.state.viewingOpponent && window.state.oppData) ? window.state.oppData.stacks.map(s => ({...s, x: s.xRatio * (document.getElementById('board-area').clientWidth||800), y: s.yRatio * (document.getElementById('board-area').clientHeight||600)})) : window.state.stacks;
+      let html = targetStacks.map(stack => window.renderStackDOM(stack, false, window.state.viewingOpponent)).join('');
+      if (window.state.draggingStack && !window.state.viewingOpponent) html += window.renderStackDOM(window.state.draggingStack, true);
       document.getElementById('board-area').innerHTML = html;
 
-      renderMarketPrices(); renderProficiency(); renderOpponentMini(); renderTradeUI();
-    }
+      window.renderMarketPrices(); window.renderProficiency(); window.renderOpponentMini(); window.renderTradeUI();
+    };
 
-    function renderOpponentMini() {
-      if (state.mode !== 'multi' || !state.oppData) return;
-      document.getElementById('opp-score').innerText = `${state.oppData.money} G`;
-      document.getElementById('opponent-mini-board').innerHTML = state.oppData.stacks.map(s => {
+    window.renderOpponentMini = function() {
+      if (window.state.mode !== 'multi' || !window.state.oppData) return;
+      document.getElementById('opp-score').innerText = `${window.state.oppData.money} G`;
+      document.getElementById('opponent-mini-board').innerHTML = window.state.oppData.stacks.map(s => {
          const t = TILES[s.cards[s.cards.length - 1]] || TILES.wood;
          return `<div class="absolute w-4 h-5 rounded-[2px] border flex items-center justify-center ${t.cardClass}" style="left:${s.xRatio*100}%; top:${s.yRatio*100}%; transform:translate(-50%,-50%);">${t.icon.replace('text-3xl', 'text-[8px]')}</div>`;
       }).join('');
-    }
+    };
 
-    function renderProficiency() {
+    window.renderProficiency = function() {
       document.getElementById('prof-list').innerHTML = ['farming', 'mining', 'woodcraft', 'cooking', 'smithing'].map(cat => {
-        const p = state.prof[cat];
+        const p = window.state.prof[cat];
         return `<div class="flex flex-col items-center flex-1" title="${CAT_INFO[cat].name}"><div class="text-sm mb-0.5">${CAT_INFO[cat].icon}</div><div class="w-full bg-slate-200 h-1 rounded-full overflow-hidden mb-0.5 shadow-inner"><div class="h-full bg-amber-400" style="width: ${(p.exp/3)*100}%"></div></div><span class="text-[8px] font-black text-slate-600">Lv.${p.lv}</span></div>`;
       }).join('');
-    }
+    };
 
-    function renderMarketPrices() {
+    window.renderMarketPrices = function() {
       document.getElementById('market-prices').innerHTML = SELLABLE_ITEMS.map(id => {
-        const t = TILES[id]; const m = state.market[id]; if(!m) return '';
+        const t = TILES[id]; const m = window.state.market[id]; if(!m) return '';
         let tIcon = m.trend > 0 ? '<i class="ph-bold ph-trend-up text-emerald-500"></i>' : m.trend < 0 ? '<i class="ph-bold ph-trend-down text-red-500"></i>' : '<i class="ph-bold ph-minus text-slate-400"></i>';
         const fp = window.getFinalPrice(id); const hb = fp > m.currentPrice;
         return `<div class="flex items-center justify-between bg-slate-50 hover:bg-slate-100 p-2.5 rounded-2xl border border-slate-200 transition-colors"><div class="flex items-center gap-2 w-16"><div class="w-6 h-6 rounded flex items-center justify-center bg-white border border-slate-200 ${t.textColor}">${t.icon.replace('text-3xl', 'text-sm')}</div><span class="text-[11px] font-black text-slate-700">${t.name}</span></div><div class="flex items-center gap-3 w-20 justify-end"><div class="flex items-center gap-1 ${m.trend>0?'price-up':m.trend<0?'price-down':'price-neutral'} text-xs font-bold w-12 justify-end">${tIcon} ${Math.abs(m.trend)}</div><div class="flex flex-col items-end w-14 leading-tight relative"><div class="flex items-center gap-0.5 text-sm font-black ${hb ? 'text-amber-600' : 'text-slate-800'}">${fp} <span class="text-[9px] text-amber-500 font-black">G</span></div><span class="text-[8.5px] font-bold text-slate-400">시장가 ${m.currentPrice}</span>${hb ? '<div class="absolute -top-1 -right-2 text-[8px] text-amber-500 animate-bounce">▲</div>' : ''}</div></div></div>`;
       }).join('');
-    }
+    };
 
-    function renderStackDOM(stack, isDragging = false, isViewOnly = false) {
+    window.renderStackDOM = function(stack, isDragging = false, isViewOnly = false) {
       let cardsHtml = stack.cards.map((cardId, idx) => {
         const t = TILES[cardId] || TILES.wood; 
         return `<div class="game-card ${t.cardClass} ${isViewOnly?'pointer-events-none':'pointer-events-auto cursor-grab'}" data-stack-id="${stack.id}" data-card-idx="${idx}" style="top: ${idx * 28}px; z-index: ${idx};" ${isDragging||isViewOnly?'':`onmouseenter="window.showTooltip('${cardId}', event)" onmouseleave="window.hideTooltip()" onmousemove="window.moveTooltip(event)"`}><div class="drop-shadow-sm mb-1">${t.icon.replace('text-3xl', 'text-2xl')}</div><span class="text-[10px] font-black">${t.name}</span></div>`;
@@ -1012,35 +955,50 @@
         craftHtml = `<div class="absolute w-[4.5rem] h-[6.5rem] rounded-[0.75rem] bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center border-2 ${ip?'border-sky-300':'border-amber-400'} z-[99]" style="top: ${(stack.cards.length-1)*28}px; pointer-events: none;"><span class="text-[9px] font-black ${ip?'text-sky-100':'text-amber-400'} mb-1 leading-tight text-center px-1 break-keep">${ip?'제작 준비:<br>':'제작 중:<br>'}${rn}</span><div class="text-2xl font-black text-white ${ip?'':'animate-pulse'}">${stack.crafting.left} <span class="text-xs">T</span></div><div class="w-10 h-1.5 bg-slate-700 rounded-full mt-1.5 overflow-hidden"><div class="h-full ${ip?'bg-sky-300':'bg-amber-400'} transition-all" style="width: ${(1-stack.crafting.left/stack.crafting.total)*100}%"></div></div></div>`;
       }
       return `<div ${isDragging?'id="dragging-stack"':''} class="absolute" style="left: ${stack.x}px; top: ${stack.y}px; z-index: ${isDragging?999:10}; ${isDragging?'opacity: 0.95; transform: scale(1.05);':''}">${cardsHtml}${craftHtml}</div>`;
-    }
+    };
 
-    function renderTradeUI() {
+    window.renderRecipeList = function() {
+      const availableRecipes = RECIPES.filter(r => !r.isSpecialty || r.unlockId === window.state.unlockedSpecialty);
+      document.getElementById('recipe-list').innerHTML = availableRecipes.map(r => {
+        const iH = r.inputs.map(ing => `<div class="w-12 h-14 rounded-xl border border-slate-200 flex flex-col items-center justify-center shadow-sm bg-slate-50 shrink-0"><div class="${TILES[ing].textColor}">${TILES[ing].icon.replace('text-3xl', 'text-xl')}</div><span class="text-[9px] font-black ${TILES[ing].textColor} mt-1">${TILES[ing].name}</span></div>`).join('<span class="text-slate-300 font-bold mx-1 shrink-0">+</span>');
+        const rH = r.results.map(res => `<div class="w-12 h-14 rounded-xl border-2 border-sky-200 flex flex-col items-center justify-center shadow-sm bg-sky-50 shrink-0"><div class="${TILES[res].textColor}">${TILES[res].icon.replace('text-3xl', 'text-xl')}</div><span class="text-[9px] font-black ${TILES[res].textColor} mt-1">${TILES[res].name}</span></div>`).join('<span class="text-slate-300 font-bold mx-1 shrink-0">, </span>');
+        return `<div class="flex flex-col bg-white p-4 rounded-2xl border border-slate-100 shadow-sm shrink-0"><div class="text-[11px] font-black text-slate-600 mb-2 flex items-center">${r.desc} <span class="text-sky-500 bg-sky-50 px-2 py-0.5 rounded-full ml-1">${r.turns} 턴</span> ${r.tier ? `<span class="text-white bg-indigo-500 px-2 py-0.5 rounded-full ml-1 text-[9px] shadow-sm">Tier ${r.tier}</span>`:''}</div><div class="flex items-center gap-3 overflow-x-auto custom-scroll pb-1"><div class="flex items-center shrink-0">${iH}</div><i class="ph-bold ph-arrow-right text-slate-300 text-xl shrink-0 mx-1"></i><div class="flex items-center shrink-0">${rH}</div></div></div>`;
+      }).join('');
+    };
+
+    window.renderNewsList = function() {
+      document.getElementById('news-list').innerHTML = window.state.newsHistory.map(n => `<div class="flex flex-col bg-slate-50 p-3 rounded-2xl border border-slate-100 shadow-sm"><div class="flex items-center gap-2 mb-1"><span class="text-[10px] font-black text-white bg-slate-400 px-2 py-0.5 rounded-full">Turn ${n.turn}</span>${n.type === 'up' ? '<i class="ph-bold ph-trend-up text-emerald-500 text-lg"></i>' : n.type === 'down' ? '<i class="ph-bold ph-trend-down text-red-500 text-lg"></i>' : '<i class="ph-bold ph-minus text-slate-400 text-lg"></i>'}</div><p class="text-xs font-bold text-slate-700">${n.msg}</p></div>`).join('');
+    };
+
+    window.toggleTradeModal = function() {
+      const m = document.getElementById('modal-trade');
+      if(m.classList.contains('hidden')) { m.classList.remove('hidden'); m.classList.add('flex'); window.renderTradeUI(); setTimeout(()=> { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10); } 
+      else { m.classList.add('opacity-0'); m.children[0].classList.add('scale-95'); setTimeout(()=> { m.classList.add('hidden'); m.classList.remove('flex'); }, 300); }
+    };
+
+    window.renderTradeUI = function() {
       if(document.getElementById('modal-trade').classList.contains('hidden')) return;
-      const lt = state.localTradeOffer;
-      document.getElementById('trade-my-money').innerText = `${lt.money} G`;
+      const lt = window.state.localTradeOffer; document.getElementById('trade-my-money').innerText = `${lt.money} G`;
       
-      let inv = {}; state.stacks.forEach(s => s.cards.forEach(c => inv[c] = (inv[c]||0) + 1));
+      let inv = {}; window.state.stacks.forEach(s => s.cards.forEach(c => inv[c] = (inv[c]||0) + 1));
       lt.items.forEach(c => { if(inv[c]) inv[c]--; });
       
       document.getElementById('trade-my-inventory').innerHTML = Object.entries(inv).filter(([k,v])=>v>0).map(([k,v]) => {
-         const t = TILES[k];
-         return `<div onclick="window.addToOffer('${k}')" class="px-2 py-1 bg-white border border-slate-200 rounded cursor-pointer hover:bg-sky-50 flex items-center gap-1"><span class="${t.textColor}">${t.icon.replace('text-3xl','text-sm')}</span> <span class="text-[10px] font-bold text-slate-700">${t.name} x${v}</span></div>`;
+         const t = TILES[k]; return `<div onclick="window.addToOffer('${k}')" class="px-2 py-1 bg-white border border-slate-200 rounded cursor-pointer hover:bg-sky-50 flex items-center gap-1"><span class="${t.textColor}">${t.icon.replace('text-3xl','text-sm')}</span> <span class="text-[10px] font-bold text-slate-700">${t.name} x${v}</span></div>`;
       }).join('') || '<span class="text-[10px] text-slate-400">자원이 없습니다.</span>';
 
       document.getElementById('trade-my-offer').innerHTML = lt.items.map((k, idx) => {
-         const t = TILES[k];
-         return `<div onclick="window.removeFromOffer(${idx})" class="px-2 py-1 bg-white border border-sky-300 rounded cursor-pointer hover:bg-rose-50 flex items-center gap-1 shadow-sm"><span class="${t.textColor}">${t.icon.replace('text-3xl','text-sm')}</span> <span class="text-[10px] font-bold text-slate-700">${t.name}</span></div>`;
+         const t = TILES[k]; return `<div onclick="window.removeFromOffer(${idx})" class="px-2 py-1 bg-white border border-sky-300 rounded cursor-pointer hover:bg-rose-50 flex items-center gap-1 shadow-sm"><span class="${t.textColor}">${t.icon.replace('text-3xl','text-sm')}</span> <span class="text-[10px] font-bold text-slate-700">${t.name}</span></div>`;
       }).join('') || '<span class="text-[10px] text-sky-400">클릭하여 자원을 올려주세요.</span>';
 
-      const oppId = state.myPlayerId === 'p1' ? 'p2' : 'p1';
-      const oppTrade = state.trade[oppId];
+      const oppId = window.state.myPlayerId === 'p1' ? 'p2' : 'p1';
+      const oppTrade = window.state.trade[oppId] || {items:[], money:0};
       document.getElementById('trade-opp-money').innerText = `${oppTrade.money} G`;
       document.getElementById('trade-opp-offer').innerHTML = oppTrade.items.map(k => {
-         const t = TILES[k];
-         return `<div class="px-2 py-1 bg-white border border-rose-300 rounded flex items-center gap-1 shadow-sm pointer-events-none"><span class="${t.textColor}">${t.icon.replace('text-3xl','text-sm')}</span> <span class="text-[10px] font-bold text-slate-700">${t.name}</span></div>`;
+         const t = TILES[k]; return `<div class="px-2 py-1 bg-white border border-rose-300 rounded flex items-center gap-1 shadow-sm pointer-events-none"><span class="${t.textColor}">${t.icon.replace('text-3xl','text-sm')}</span> <span class="text-[10px] font-bold text-slate-700">${t.name}</span></div>`;
       }).join('') || '<span class="text-[10px] text-rose-400">제안된 자원이 없습니다.</span>';
 
-      const myTrade = state.trade[state.myPlayerId];
+      const myTrade = window.state.trade[window.state.myPlayerId] || {accept:false};
       const btn = document.getElementById('btn-accept-trade');
       if (myTrade.accept) {
          btn.className = "py-3 bg-slate-300 text-slate-500 font-black rounded-xl shadow-inner flex items-center justify-center gap-2 cursor-default pointer-events-none";
@@ -1049,17 +1007,65 @@
          btn.className = "py-3 bg-purple-600 text-white font-black rounded-xl hover:bg-purple-500 transition-colors shadow-md flex items-center justify-center gap-2";
          btn.innerHTML = `<i class="ph-bold ph-check-circle"></i> 현재 조건으로 거래 수락`;
       }
-    }
+    };
 
-    function renderChat(msgs) {
-      state.chat = msgs;
-      const box = document.getElementById('chat-messages');
+    window.adjTradeMoney = function(amt) {
+      const newM = window.state.localTradeOffer.money + amt;
+      if (newM < 0 || newM > window.state.money) return window.notify("보유한 골드를 초과할 수 없습니다.", "error");
+      window.state.localTradeOffer.money = newM; window.renderTradeUI();
+    };
+
+    window.addToOffer = function(itemId) { window.state.localTradeOffer.items.push(itemId); window.renderTradeUI(); };
+    window.removeFromOffer = function(idx) { window.state.localTradeOffer.items.splice(idx, 1); window.renderTradeUI(); };
+
+    window.proposeTrade = async function() {
+      const lt = window.state.localTradeOffer;
+      if (window.state.mode !== 'multi' || !user) return;
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
+      await updateDoc(roomRef, {
+         [`trade.${window.state.myPlayerId}.items`]: lt.items, [`trade.${window.state.myPlayerId}.money`]: lt.money,
+         [`trade.${window.state.myPlayerId}.accept`]: false, [`trade.${window.state.myPlayerId === 'p1'?'p2':'p1'}.accept`]: false 
+      });
+      window.notify("제안을 성공적으로 올렸습니다.", "success");
+    };
+
+    window.acceptTrade = async function() {
+      if (window.state.mode !== 'multi' || !user) return;
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
+      await updateDoc(roomRef, { [`trade.${window.state.myPlayerId}.accept`]: true });
+    };
+
+    window.toggleChat = function() {
+      const c = document.getElementById('chat-container'); const ic = document.getElementById('chat-icon');
+      window.state.isChatOpen = !window.state.isChatOpen;
+      if (window.state.isChatOpen) { c.classList.remove('chat-closed'); c.classList.add('chat-open'); ic.classList.replace('ph-caret-up', 'ph-caret-down'); document.getElementById('chat-unread').classList.add('hidden'); } 
+      else { c.classList.remove('chat-open'); c.classList.add('chat-closed'); ic.classList.replace('ph-caret-down', 'ph-caret-up'); }
+    };
+
+    window.renderChat = function(msgs) {
+      window.state.chat = msgs; const box = document.getElementById('chat-messages');
       box.innerHTML = msgs.map(m => {
-         const isMe = m.sender === state.myPlayerId;
+         const isMe = m.sender === window.state.myPlayerId;
          return `<div class="flex ${isMe?'justify-end':'justify-start'}"><div class="max-w-[80%] px-3 py-1.5 rounded-xl ${isMe?'bg-indigo-500 text-white rounded-br-none':'bg-white border border-slate-200 text-slate-700 rounded-bl-none'} shadow-sm">${m.msg}</div></div>`;
       }).join('');
       box.scrollTop = box.scrollHeight;
-    }
+    };
+
+    window.sendChat = async function() {
+      const input = document.getElementById('chat-input'); const text = input.value.trim();
+      if (!text || window.state.mode !== 'multi' || !user) return;
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
+      await updateDoc(roomRef, { chat: arrayUnion({ sender: window.state.myPlayerId, msg: text, time: Date.now() }) });
+      input.value = '';
+    };
+
+    window.addEventListener("beforeunload", (e) => {
+        if (window.state.mode === 'multi' && window.state.roomId && user) {
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
+            deleteDoc(roomRef).catch(()=>{}); 
+        }
+    });
+
   </script>
 </body>
 </html>
