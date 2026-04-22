@@ -344,12 +344,12 @@
     </div>
   </div>
 
-  <div id="notif-container" class="fixed top-24 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-2 pointer-events-none w-full max-w-md"></div>
-
   <div id="tooltip" class="fixed z-[999] pointer-events-none bg-white/95 backdrop-blur-md border-2 border-sky-200 p-3 rounded-2xl shadow-2xl hidden transition-opacity text-slate-800">
     <div class="text-[10px] font-black text-sky-500 uppercase mb-2 border-b border-sky-100 pb-1">관련 조합법</div>
     <div id="tooltip-content" class="space-y-2"></div>
   </div>
+
+  <div id="notif-container" class="fixed top-24 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-2 pointer-events-none w-full max-w-md"></div>
 
   <!-- 통합 모듈 스크립트 -->
   <script type="module">
@@ -358,20 +358,21 @@
     import { getFirestore, doc, setDoc, getDoc, onSnapshot, arrayUnion, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // --- Firebase Init ---
-    let firebaseConfig = null;
-    try { firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null; } catch(e) {}
+    let firebaseConfig;
+    try { firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "684632891695", projectId: "sky-tycoon-mock" }; } catch(e) { firebaseConfig = { apiKey: "684632891695", projectId: "sky-tycoon-mock" }; }
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
     let db, auth, user = null;
     let isFirebaseReady = false;
 
     async function initFirebase() {
-        if (!firebaseConfig) { console.log("Offline mode"); return; }
         try {
             const app = initializeApp(firebaseConfig); auth = getAuth(app); db = getFirestore(app);
             onAuthStateChanged(auth, (u) => { user = u; isFirebaseReady = true; });
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
             else await signInAnonymously(auth);
+            user = auth.currentUser;
+            isFirebaseReady = true;
         } catch(e) { console.warn("Firebase Error", e); }
     }
     initFirebase();
@@ -549,7 +550,7 @@
     };
 
     window.createRoom = async function() {
-      if (!user || !isFirebaseReady) return window.notify('DB 접속 대기 중입니다. 잠시 후 다시 시도하세요.', 'error');
+      if (!isFirebaseReady || !user) return window.notify("서버 연결 중입니다. 잠시 후 다시 시도해주세요.", "error");
       window.state.mode = 'multi'; window.state.myPlayerId = 'p1';
       window.state.roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
       
@@ -564,7 +565,7 @@
     };
 
     window.joinRoom = async function() {
-      if (!user || !isFirebaseReady) return window.notify('DB 접속 대기 중입니다.', 'error');
+      if (!isFirebaseReady || !user) return window.notify("서버 연결 중입니다. 잠시 후 다시 시도해주세요.", "error");
       const code = document.getElementById('room-code-input').value.toUpperCase();
       if(code.length !== 4) return window.notify('4자리 코드를 입력하세요.', 'error');
       
@@ -872,7 +873,7 @@
           else window.notify("시장에서 안 사는 물건입니다 ❌", "error");
 
           if (remains.length > 0) window.state.stacks.push({ id: `s${window.nextStackId++}`, x: window.state.draggingStack.x - 50, y: window.state.draggingStack.y - 100, cards: remains, crafting: null });
-          window.state.draggingStack = null; window.dragData = null; window.renderAll(); syncMyState(); return;
+          window.state.draggingStack = null; window.dragData = null; window.renderAll(); window.syncMyState(); return;
       }
 
       let ts = null; let minD = 60; 
@@ -892,7 +893,7 @@
         window.state.stacks.push({ id: `s${window.nextStackId++}`, x: window.state.draggingStack.x, y: window.state.draggingStack.y, cards: window.state.draggingStack.cards, crafting: null });
         window.checkAndSetRecipe(window.state.stacks[window.state.stacks.length - 1]);
       }
-      window.state.draggingStack = null; window.dragData = null; window.renderAll(); syncMyState();
+      window.state.draggingStack = null; window.dragData = null; window.renderAll(); window.syncMyState();
     });
 
     // --- UI 그리기 ---
@@ -1059,12 +1060,9 @@
       input.value = '';
     };
 
-    window.addEventListener("beforeunload", (e) => {
-        if (window.state.mode === 'multi' && window.state.roomId && user) {
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
-            deleteDoc(roomRef).catch(()=>{}); 
-        }
-    });
+    // 데이터베이스에 저장할 함수들 노출
+    window.syncMyState = syncMyState;
+    window.syncGlobalState = syncGlobalState;
 
   </script>
 </body>
