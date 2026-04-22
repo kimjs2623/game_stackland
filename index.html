@@ -360,11 +360,32 @@
     // --- Firebase Init ---
     let firebaseConfig;
     try { 
-      firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "", projectId: "sky-tycoon-mock" }; 
+      if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+        firebaseConfig = JSON.parse(__firebase_config); 
+      } else {
+        // 제공해주신 깃허브 등 외부 호스팅용 Firebase 설정 적용
+        firebaseConfig = {
+          apiKey: "AIzaSyDfItNnUuQ4wf6g8QPLiyXcjhXYEavRsKA",
+          authDomain: "game-stackland.firebaseapp.com",
+          projectId: "game-stackland",
+          storageBucket: "game-stackland.firebasestorage.app",
+          messagingSenderId: "684632891695",
+          appId: "1:684632891695:web:5b186f9f5b0a108888c1da",
+          measurementId: "G-4GPBGX5K4R"
+        };
+      }
     } catch(e) { 
-      firebaseConfig = { apiKey: "", projectId: "sky-tycoon-mock" }; 
+      firebaseConfig = {
+        apiKey: "AIzaSyDfItNnUuQ4wf6g8QPLiyXcjhXYEavRsKA",
+        authDomain: "game-stackland.firebaseapp.com",
+        projectId: "game-stackland",
+        storageBucket: "game-stackland.firebasestorage.app",
+        messagingSenderId: "684632891695",
+        appId: "1:684632891695:web:5b186f9f5b0a108888c1da",
+        measurementId: "G-4GPBGX5K4R"
+      }; 
     }
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'sky-tycoon-external';
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
