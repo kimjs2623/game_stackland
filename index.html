@@ -49,6 +49,13 @@
       transform: scale(1.05);
       box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
     }
+
+    .trade-zone-active {
+      border-color: #8b5cf6 !important;
+      background-color: #ede9fe !important;
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+    }
     
     .price-up { color: #10b981; } 
     .price-down { color: #ef4444; } 
@@ -91,7 +98,17 @@
     <div class="bg-white border border-slate-200 w-full max-w-md rounded-[2rem] shadow-2xl flex flex-col transform scale-95 transition-transform overflow-hidden p-8" onclick="event.stopPropagation()">
       <h2 class="text-2xl font-black text-indigo-600 mb-6 text-center">멀티플레이 접속</h2>
       <div class="flex flex-col gap-4">
-        <button onclick="window.createRoom()" class="w-full py-4 bg-indigo-500 text-white font-black rounded-xl shadow-md hover:bg-indigo-400">새로운 방 만들기 (방장)</button>
+        
+        <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100 flex flex-col gap-2">
+          <label class="text-xs font-black text-indigo-500 uppercase tracking-wider">방장 전용 설정</label>
+          <div class="flex items-center gap-3">
+             <span class="text-sm font-bold text-slate-700 w-24">최대 턴 수:</span>
+             <input type="number" id="room-max-turns-input" value="30" min="10" max="100" class="flex-1 border-2 border-indigo-200 rounded-lg px-3 py-1.5 font-black text-indigo-700 focus:border-indigo-400 outline-none text-center">
+          </div>
+        </div>
+
+        <button onclick="window.createRoom()" class="w-full py-4 bg-indigo-500 text-white font-black rounded-xl shadow-md hover:bg-indigo-400 mt-1">새로운 방 만들기</button>
+        
         <div class="relative flex items-center py-2">
           <div class="flex-grow border-t border-slate-200"></div><span class="flex-shrink-0 mx-4 text-slate-400 text-sm font-bold">또는</span><div class="flex-grow border-t border-slate-200"></div>
         </div>
@@ -104,7 +121,7 @@
     </div>
   </div>
 
-  <!-- 대기실 화면 (멀티플레이 전용) -->
+  <!-- 대기실 화면 -->
   <div id="screen-waiting" class="absolute inset-0 flex flex-col items-center justify-center z-40 hidden opacity-0 transition-opacity duration-500">
     <div class="bg-white/90 p-12 rounded-[3rem] backdrop-blur-xl border border-white shadow-2xl text-center max-w-lg w-full">
        <h2 class="text-4xl font-black text-indigo-600 mb-2">대기실</h2>
@@ -134,12 +151,10 @@
     </div>
   </div>
 
-  <!-- 2. 게임 화면 -->
+  <!-- 게임 화면 -->
   <div id="screen-game" class="absolute inset-0 flex flex-col p-4 md:p-6 z-10 hidden opacity-0 transition-opacity duration-500 pointer-events-none">
     
-    <!-- 상단 바 -->
     <div class="flex items-center justify-between gap-4 bg-white/80 p-3 rounded-[2rem] border border-white shadow-md backdrop-blur-xl mb-4 shrink-0 relative z-20 pointer-events-auto">
-      <!-- 내 상태 -->
       <div class="flex gap-3 w-1/3">
         <div class="flex flex-col items-center px-4 py-1.5 rounded-2xl bg-amber-400 text-amber-950 shadow-inner border-2 border-amber-300 min-w-[120px]">
           <span class="text-[10px] font-black uppercase tracking-wider opacity-80">수익 (Gold)</span>
@@ -147,11 +162,10 @@
         </div>
         <div class="flex flex-col items-center bg-slate-50 px-4 py-1.5 rounded-2xl shadow-inner border border-slate-200">
           <span class="text-[10px] font-black text-slate-400 uppercase text-center" id="turn-status">진행 턴</span>
-          <span class="text-xl font-black text-slate-800"><span id="turn-count">1</span> <span class="text-xs text-slate-400">/ 30</span></span>
+          <span class="text-xl font-black text-slate-800"><span id="turn-count">1</span> <span class="text-xs text-slate-400" id="max-turn-display">/ 30</span></span>
         </div>
       </div>
 
-      <!-- 공유 풀 -->
       <div class="flex flex-col items-center flex-1">
         <div class="text-[11px] font-black text-sky-600 uppercase mb-2 bg-sky-100 px-4 py-1 rounded-full border border-sky-200 shadow-sm flex items-center gap-1" id="pool-guide">
           <i class="ph-bold ph-hand-grabbing"></i> 자원을 하나 가져가면 턴이 종료됩니다
@@ -164,13 +178,11 @@
         </div>
       </div>
 
-      <!-- 사이드 버튼 및 방 정보 -->
       <div class="flex gap-2 w-1/3 justify-end items-center">
         <div id="room-info" class="hidden flex-col items-end mr-2 text-right">
           <span class="text-[10px] font-black text-indigo-400 uppercase bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">Multiplayer</span>
           <span class="text-xs font-black text-slate-600 mt-1">방: <span id="display-room-code" class="text-indigo-600"></span></span>
         </div>
-        <!-- 거래 버튼 (멀티 전용) -->
         <button id="btn-trade" onclick="window.toggleTradeModal()" class="hidden py-2 px-3 bg-purple-50 text-purple-700 rounded-xl font-black text-xs hover:bg-purple-100 transition-colors shadow-sm border border-purple-200 hover:scale-105 flex-col items-center justify-center relative">
           <i class="ph-bold ph-handshake text-lg mb-0.5"></i> 거래소
           <span id="trade-notif-badge" class="absolute -top-1 -right-1 bg-red-500 text-white w-3 h-3 rounded-full hidden animate-ping"></span>
@@ -184,15 +196,12 @@
       </div>
     </div>
 
-    <!-- 메인 플레이 영역 -->
+    <!-- 플레이 영역 -->
     <div class="flex-1 flex gap-4 overflow-hidden pointer-events-auto h-full relative">
       
-      <!-- 왼쪽: 보드 영역 -->
       <div class="flex-1 relative bg-white/50 rounded-[3rem] border-2 border-white shadow-xl backdrop-blur-md overflow-hidden" id="board-container">
-        <!-- 보드 렌더링 -->
         <div class="absolute inset-0" id="board-area"></div>
         
-        <!-- 상대방 영지 보고 있을 때 오버레이 -->
         <div id="opponent-overlay" class="absolute inset-0 bg-indigo-900/10 backdrop-blur-[2px] hidden items-end justify-center pb-12 z-[50]">
            <button onclick="window.changeViewPlayer('me')" class="px-8 py-4 bg-indigo-600 text-white font-black text-lg rounded-full shadow-2xl hover:scale-105 transition-all flex items-center gap-2 border-4 border-indigo-400 animate-bounce">
              <i class="ph-bold ph-arrow-u-up-left text-2xl"></i> 내 영지로 돌아가기
@@ -202,24 +211,19 @@
            </div>
         </div>
         
-        <!-- 판매소 -->
         <div id="market-zone" class="absolute bottom-6 right-6 w-36 h-36 bg-amber-50/90 border-4 border-dashed border-amber-300 rounded-[2rem] flex flex-col items-center justify-center transition-all z-0 shadow-sm backdrop-blur-sm">
            <i class="ph-fill ph-storefront text-4xl text-amber-400 drop-shadow-sm mb-1"></i>
            <span class="font-black text-amber-600 text-[10px] bg-amber-100 px-3 py-1 rounded-full text-center leading-tight">시장에 매각</span>
         </div>
       </div>
 
-      <!-- 오른쪽: 패널 -->
       <div class="w-72 bg-white/70 rounded-[3rem] border border-white shadow-xl backdrop-blur-xl p-4 flex flex-col h-full relative z-20">
-        <!-- 상대방 영지 정찰 (N인용 드롭다운) -->
         <div id="opponent-panel" class="mb-3 shrink-0 hidden flex-col gap-1">
           <label class="text-[10px] font-black text-indigo-600 ml-1"><i class="ph-bold ph-binoculars"></i> 영지 정찰</label>
           <select id="view-player-select" onchange="window.changeViewPlayer(this.value)" class="w-full py-2 px-3 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl font-black text-xs outline-none cursor-pointer">
-             <!-- JS 렌더링 -->
           </select>
         </div>
 
-        <!-- 숙련도 -->
         <div class="mb-3 bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm shrink-0">
           <div class="text-[10px] font-black text-slate-600 mb-1.5 px-1 flex justify-between items-center">
             <span class="flex items-center gap-1"><i class="ph-fill ph-medal text-amber-500"></i> 내 숙련도</span>
@@ -228,7 +232,6 @@
           <div id="prof-list" class="flex justify-between gap-1 px-1"></div>
         </div>
 
-        <!-- 마켓 헤더 -->
         <div class="flex justify-between items-center mb-2 border-b border-slate-200 pb-2 shrink-0">
           <h3 class="font-black text-slate-800 text-sm flex items-center gap-2">
             <i class="ph-bold ph-chart-line-up text-sky-500 text-lg"></i> 글로벌 거래소
@@ -248,13 +251,11 @@
       </div>
     </div>
     
-    <!-- 채팅 위젯 (멀티 전용) -->
     <div id="chat-container" class="fixed bottom-4 left-4 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden z-[150] chat-closed hidden pointer-events-auto">
        <div class="bg-indigo-500 text-white p-2 px-4 font-black cursor-pointer flex justify-between items-center hover:bg-indigo-600 transition-colors" onclick="window.toggleChat()">
           <span class="flex items-center gap-2"><i class="ph-bold ph-chat-circle-dots text-lg"></i> 라운지 채팅 <span id="chat-unread" class="bg-red-500 text-white rounded-full px-2 py-0.5 text-[10px] hidden">New</span></span>
           <i class="ph-bold ph-caret-up" id="chat-icon"></i>
        </div>
-       <!-- 귓속말 대상 선택 -->
        <div class="flex items-center gap-2 p-1.5 bg-indigo-50 border-b border-indigo-100 shrink-0 px-3">
           <span class="text-[10px] font-black text-indigo-400">To:</span>
           <select id="chat-target-select" class="text-xs bg-transparent outline-none font-bold text-indigo-700 flex-1 cursor-pointer">
@@ -269,22 +270,16 @@
     </div>
   </div>
 
-  <!-- 거래 시스템 모달 -->
   <div id="modal-trade" class="fixed inset-0 z-[300] hidden flex-col items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 opacity-0 transition-opacity" onclick="window.toggleTradeModal()">
     <div class="bg-white border border-slate-200 w-full max-w-4xl rounded-[2rem] shadow-2xl flex flex-col transform scale-95 transition-transform overflow-hidden" style="max-height: 90vh;" onclick="event.stopPropagation()">
       <div class="p-5 pb-3 border-b border-slate-100 shrink-0 bg-purple-50 flex justify-between items-center">
         <h2 class="text-xl font-black text-purple-700 flex items-center gap-2"><i class="ph-bold ph-handshake"></i> 플레이어 간 거래</h2>
         <button onclick="window.toggleTradeModal()" class="text-slate-400 hover:text-slate-700"><i class="ph-bold ph-x text-2xl"></i></button>
       </div>
-      
-      <!-- 거래 내용이 동적으로 렌더링될 컨테이너 -->
-      <div id="trade-dynamic-content" class="flex flex-col md:flex-row flex-1 overflow-hidden bg-white">
-         <!-- JS 렌더링 -->
-      </div>
+      <div id="trade-dynamic-content" class="flex flex-col md:flex-row flex-1 overflow-hidden bg-white"></div>
     </div>
   </div>
 
-  <!-- 결과 및 모달들 -->
   <div id="splash-news" class="fixed inset-0 z-[400] pointer-events-none flex items-center justify-center opacity-0 transition-opacity duration-500 hidden">
       <div id="splash-news-content" class="bg-white/95 backdrop-blur-xl border-4 border-amber-300 p-8 rounded-[3rem] shadow-[0_0_50px_rgba(245,158,11,0.3)] text-center transform scale-90 transition-transform duration-500 max-w-2xl">
           <div class="flex justify-center mb-4 text-amber-500 animate-bounce"><i class="ph-fill ph-broadcast text-6xl"></i></div>
@@ -331,13 +326,12 @@
 
   <div id="notif-container" class="fixed top-24 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-2 pointer-events-none w-full max-w-md"></div>
 
-  <!-- 통합 모듈 스크립트 -->
+  <!-- 통합 모듈 스크립트 (Clean) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, onSnapshot, arrayUnion, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // --- Firebase Init ---
     let firebaseConfig;
     let isExternalMode = false;
 
@@ -394,7 +388,6 @@
         isFirebaseReady = true;
     });
 
-    // --- Data ---
     const TILES = {
       wood: { name: '나무', category: 'woodcraft', cardClass: 'bg-emerald-100 text-emerald-800 border-emerald-400', textColor: 'text-emerald-700', icon: '<i class="ph-fill ph-tree-evergreen text-3xl"></i>', basePrice: 100, volatility: 1.0 },
       stone: { name: '바위', category: 'mining', cardClass: 'bg-stone-200 text-stone-800 border-stone-400', textColor: 'text-stone-700', icon: '<i class="ph-fill ph-mountains text-3xl"></i>', basePrice: 100, volatility: 0.8 },
@@ -444,11 +437,9 @@
       { id: 'p2', category: 'mining', inputs: ['quarry', 'villager'], results: ['quarry', 'villager', 'stone'], turns: 1, desc: '채석 작업' },
       { id: 'p3', category: 'farming', inputs: ['farm', 'seed', 'villager'], results: ['farm', 'villager', 'wheat'], turns: 2, desc: '밀 경작' },
       { id: 'l2', category: 'general', inputs: ['laboratory', 'paper', 'villager'], results: ['laboratory', 'villager', 'research'], turns: 2, desc: '연구 진행' },
-
       { id: 's1', category: 'mining', tier: 1, inputs: ['water', 'stone', 'fire'], results: ['mana_crystal'], turns: 3, desc: '마나석 가공 (1티어)', isSpecialty: true, unlockId: 'mana_crystal' },
       { id: 's2', category: 'farming', tier: 1, inputs: ['seed', 'wood', 'water'], results: ['golden_apple'], turns: 3, desc: '황금사과 재배 (1티어)', isSpecialty: true, unlockId: 'golden_apple' },
       { id: 's3', category: 'woodcraft', tier: 1, inputs: ['wheat', 'fire', 'water'], results: ['sky_cloth'], turns: 3, desc: '천공의 천 직조 (1티어)', isSpecialty: true, unlockId: 'sky_cloth' },
-      
       { id: 's4', category: 'cooking', tier: 2, inputs: ['mana_crystal', 'research', 'water'], results: ['elixir'], turns: 4, desc: '엘릭서 연성 (2티어)', isSpecialty: true, unlockId: 'mana_crystal' },
       { id: 's5', category: 'farming', tier: 2, inputs: ['golden_apple', 'research', 'seed'], results: ['star_fruit'], turns: 4, desc: '별빛열매 개량 (2티어)', isSpecialty: true, unlockId: 'golden_apple' },
       { id: 's6', category: 'woodcraft', tier: 2, inputs: ['sky_cloth', 'research', 'fire'], results: ['magic_carpet'], turns: 4, desc: '마법 양탄자 제작 (2티어)', isSpecialty: true, unlockId: 'sky_cloth' },
@@ -469,22 +460,20 @@
       { msg: "[연구] 아카데미에서 논문 공모전 개최. 연구 데이터 가격 상승!", target: "research", effect: 1.8, type: "up", title: "연구 지원금" }
     ];
 
-    const MAX_TURNS = 30;
-
     // --- State ---
     window.state = {
       mode: 'single', roomId: null, myPlayerId: null, turnCount: 1, money: 0, stacks: [], sharedPool: [], displayPool: [], draggingStack: null, market: {}, newsHistory: [], unlockedSpecialty: null, 
-      playerIds: [], playersData: {}, viewingOpponent: false, viewingPlayerId: null,
+      playerIds: [], playersData: {}, viewingOpponent: false, viewingPlayerId: null, maxTurns: 30,
       prof: { farming: { lv: 1, exp: 0 }, mining: { lv: 1, exp: 0 }, woodcraft: { lv: 1, exp: 0 }, cooking: { lv: 1, exp: 0 }, smithing: { lv: 1, exp: 0 } },
       chat: [], isChatOpen: false, 
-      activeTrade: null, localTradeOffer: { money: 0, items: [] }
+      activeTrade: null, localTradeOffer: { money: 0, items: [] }, lastTradeTime: 0
     };
     
     window.nextStackId = 1; 
     window.unsubSnapshot = null; 
     window.dragData = null;
 
-    // --- Helpers ---
+    // --- Core Functions ---
     window.notify = function(msg, type = 'info') {
       const container = document.getElementById('notif-container');
       if (!container) return;
@@ -561,7 +550,6 @@
        window.renderAll();
     };
 
-    // --- App Flow ---
     window.startGame = function(mode) {
       document.getElementById('screen-menu').classList.add('hidden');
       if (mode === 'single') { window.state.mode = 'single'; window.initGame(); }
@@ -571,15 +559,19 @@
       const m = document.getElementById('modal-lobby'); m.classList.remove('hidden'); m.classList.add('flex');
       setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10);
     };
+
     window.hideLobby = function() {
       const m = document.getElementById('modal-lobby'); m.classList.add('opacity-0'); m.children[0].classList.add('scale-95');
       setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
     };
 
-    // --- Multiplayer ---
+    // --- Multiplayer / Network ---
     window.createRoom = async function() {
       if (!isFirebaseReady || !user) return window.notify("서버 연결 중입니다. 잠시 후 다시 시도해주세요.", "error");
       
+      const maxTurnsInput = document.getElementById('room-max-turns-input');
+      window.state.maxTurns = maxTurnsInput ? parseInt(maxTurnsInput.value) || 30 : 30;
+
       window.state.myPlayerId = 'Player 1';
       window.state.mode = 'multi-wait';
       window.state.roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -589,7 +581,7 @@
       
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
       await setDoc(roomRef, {
-        status: 'waiting', host: 'Player 1', playerIds: ['Player 1'], chat: []
+        status: 'waiting', host: 'Player 1', playerIds: ['Player 1'], chat: [], maxTurns: window.state.maxTurns
       });
       window.startSync(roomRef);
     };
@@ -609,6 +601,7 @@
       window.state.myPlayerId = myId;
       window.state.mode = 'multi-wait';
       window.state.roomId = code;
+      window.state.maxTurns = data.maxTurns || 30;
       
       window.hideLobby(); window.showScreen('screen-waiting');
       document.getElementById('waiting-room-code').innerText = window.state.roomId;
@@ -625,7 +618,6 @@
       const starts = ['wood', 'stone', 'seed', 'water', 'fire', 'villager'];
       starts.forEach((id, idx) => {
          const angle = (idx / starts.length) * Math.PI * 2; const r = 120;
-         // Assign temporary IDs, but real IDs will be assigned on deserialize
          initialStacks.push({ id: `s${idx}`, xRatio: (w/2 + Math.cos(angle)*r - 30)/w, yRatio: (h/2 + Math.sin(angle)*r - 50)/h, cards: [id], crafting: null });
       });
 
@@ -641,7 +633,7 @@
       await updateDoc(roomRef, {
          status: 'playing', turnCount: 1, playersData: playersData, 
          sharedPool: fullPool.slice(4), displayPool: fullPool.slice(0, 4), market: window.state.market, newsHistory: window.state.newsHistory,
-         activeTrade: null 
+         activeTrade: null, lastTradeTime: 0
       });
     };
 
@@ -649,6 +641,7 @@
       window.state.mode = 'multi-play';
       window.state.turnCount = data.turnCount; window.state.market = data.market; window.state.sharedPool = data.sharedPool; window.state.displayPool = data.displayPool; window.state.newsHistory = data.newsHistory || [];
       window.state.playersData = data.playersData;
+      window.state.maxTurns = data.maxTurns || 30;
       
       const myData = data.playersData[window.state.myPlayerId];
       window.state.money = myData.money; window.state.prof = myData.prof; 
@@ -676,9 +669,9 @@
       window.renderAll();
     };
 
-    // --- Single Player ---
+    // --- Game Flow ---
     window.initGame = function() {
-      window.state.turnCount = 1; window.state.money = 0; window.state.stacks = []; window.nextStackId = 1; window.state.viewingOpponent = false;
+      window.state.turnCount = 1; window.state.money = 0; window.state.stacks = []; window.nextStackId = 1; window.state.viewingOpponent = false; window.state.maxTurns = 30;
       window.state.prof = { farming: {lv:1,exp:0}, mining: {lv:1,exp:0}, woodcraft: {lv:1,exp:0}, cooking: {lv:1,exp:0}, smithing: {lv:1,exp:0} };
       
       window.initMarket();
@@ -791,7 +784,7 @@
         if (m.currentPrice < 1) m.currentPrice = 1; m.trend = m.currentPrice - m.previousPrice;
       });
 
-      if (window.state.turnCount >= MAX_TURNS) {
+      if (window.state.turnCount >= window.state.maxTurns) {
         window.endGame(); return;
       }
       
@@ -835,7 +828,7 @@
       location.reload();
     };
 
-    // --- Sync Logic ---
+    // --- Sync & Trade Logics ---
     window.startSync = function(roomRef) {
       window.unsubSnapshot = onSnapshot(roomRef, (docSnap) => {
         if (!docSnap.exists()) return;
@@ -862,14 +855,28 @@
            if(data.newsHistory) window.state.newsHistory = data.newsHistory;
            window.notify("턴이 갱신되었습니다.", "info");
         }
+        if (data.maxTurns) window.state.maxTurns = data.maxTurns;
         
         window.state.playersData = data.playersData;
+
+        if (data.lastTradeTime && data.lastTradeTime > (window.state.lastTradeTime || 0)) {
+            window.state.lastTradeTime = data.lastTradeTime;
+            const myData = data.playersData[window.state.myPlayerId];
+            if (myData) {
+                window.state.money = myData.money;
+                const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
+                window.state.stacks = myData.stacks.map(s => ({...s, id: s.id || `s${window.nextStackId++}`, x: s.xRatio * w, y: s.yRatio * h}));
+                if (data.activeTrade?.pA !== window.state.myPlayerId) { 
+                    window.notify("거래 성사! 보드 중앙과 골드를 확인하세요 🎁", "success");
+                    window.state.localTradeOffer = { money: 0, items: [] };
+                }
+            }
+        }
 
         if (data.activeTrade) {
            const prevTrade = window.state.activeTrade;
            window.state.activeTrade = data.activeTrade; 
            
-           // 요청을 받은 쪽(pB) 화면에만 요청 팝업 띄우기
            if (data.activeTrade.status === 'requested' && data.activeTrade.pB === window.state.myPlayerId && (!prevTrade || prevTrade.status !== 'requested')) {
                const m = document.getElementById('modal-trade');
                if(m.classList.contains('hidden')) { 
@@ -881,7 +888,6 @@
            
            window.renderTradeUI();
 
-           // 거래 체결 검사 (pA 클라이언트 주도)
            if (data.activeTrade.status === 'negotiating' && data.activeTrade.pAAccept && data.activeTrade.pBAccept && window.state.myPlayerId === data.activeTrade.pA) {
                window.executeTradeInDB(roomRef, data);
            }
@@ -924,13 +930,14 @@
        const newPAStacks = window.removeItemsFromStacks(data.playersData[pA_id].stacks, tr.pAItems);
        const newPBStacks = window.removeItemsFromStacks(data.playersData[pB_id].stacks, tr.pBItems);
        
-       tr.pBItems.forEach((item, idx) => newPAStacks.push({ id: `t_${Date.now()}_${idx}_b`, xRatio: 0.5, yRatio: 0.5, cards: [item], crafting: null }));
-       tr.pAItems.forEach((item, idx) => newPBStacks.push({ id: `t_${Date.now()}_${idx}_a`, xRatio: 0.5, yRatio: 0.5, cards: [item], crafting: null }));
+       tr.pBItems.forEach((item, idx) => newPAStacks.push({ id: `t_${Date.now()}_${idx}_b`, xRatio: 0.45 + Math.random()*0.1, yRatio: 0.45 + Math.random()*0.1, cards: [item], crafting: null }));
+       tr.pAItems.forEach((item, idx) => newPBStacks.push({ id: `t_${Date.now()}_${idx}_a`, xRatio: 0.45 + Math.random()*0.1, yRatio: 0.45 + Math.random()*0.1, cards: [item], crafting: null }));
 
        await updateDoc(roomRef, {
            [`playersData.${pA_id}.money`]: pA_money, [`playersData.${pA_id}.stacks`]: newPAStacks,
            [`playersData.${pB_id}.money`]: pB_money, [`playersData.${pB_id}.stacks`]: newPBStacks,
-           activeTrade: null
+           activeTrade: null,
+           lastTradeTime: Date.now() 
        });
        window.notify("거래 성사! 보드 중앙과 골드를 확인하세요 🎁", "success");
        window.state.localTradeOffer = { money: 0, items: [] };
@@ -955,10 +962,10 @@
 
     window.serializeStacks = function(stacks) {
        const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
-       return stacks.map(s => ({ id: s.id, xRatio: s.x / w, yRatio: s.y / h, cards: s.cards, crafting: s.crafting }));
+       return stacks.map(s => ({ id: s.id || `s${window.nextStackId++}`, xRatio: s.x / w, yRatio: s.y / h, cards: s.cards, crafting: s.crafting }));
     };
 
-    // --- 드래그 이벤트 ---
+    // --- Drag Events ---
     const boardArea = document.getElementById('board-area');
     boardArea.addEventListener('pointerdown', e => {
       if (window.state.viewingOpponent) return;
@@ -1017,9 +1024,10 @@
           window.state.draggingStack = null; window.dragData = null; window.renderAll(); window.fb_syncMyState(); return;
       }
 
-      let ts = null; let minD = 60; 
+      let ts = null; let minD = 55; 
       for (let s of window.state.stacks) {
-        const dist = Math.sqrt(Math.pow(s.x - window.state.draggingStack.x, 2) + Math.pow(s.y - window.state.draggingStack.y, 2));
+        const targetY = s.y + (s.cards.length - 1) * 28;
+        const dist = Math.sqrt(Math.pow(s.x - window.state.draggingStack.x, 2) + Math.pow(targetY - window.state.draggingStack.y, 2));
         if (dist < minD) { minD = dist; ts = s; }
       }
 
@@ -1037,9 +1045,13 @@
       window.state.draggingStack = null; window.dragData = null; window.renderAll(); window.fb_syncMyState();
     });
 
-    // --- UI 그리기 ---
+    // --- UI Render ---
     window.renderAll = function() {
       document.getElementById('score').innerText = window.state.money;
+      
+      const maxTurnDisplay = document.getElementById('max-turn-display');
+      if (maxTurnDisplay) maxTurnDisplay.innerText = `/ ${window.state.maxTurns}`;
+
       if (window.state.mode.startsWith('multi')) {
          const currentTurnPlayer = window.state.playerIds[(window.state.turnCount - 1) % window.state.playerIds.length];
          const isMyTurn = (currentTurnPlayer === window.state.myPlayerId);
@@ -1060,8 +1072,8 @@
          targetStacks = oppData.stacks.map(s => ({...s, x: s.xRatio * w, y: s.yRatio * h}));
       }
 
-      let html = targetStacks.map(stack => window.renderStackDOM(stack, false, window.state.viewingOpponent)).join('');
-      if (window.state.draggingStack && !window.state.viewingOpponent) html += window.renderStackDOM(window.state.draggingStack, true);
+      let html = targetStacks.map((stack, i) => window.renderStackDOM(stack, false, window.state.viewingOpponent, i)).join(''); 
+      if (window.state.draggingStack && !window.state.viewingOpponent) html += window.renderStackDOM(window.state.draggingStack, true, false, 999);
       document.getElementById('board-area').innerHTML = html;
 
       window.renderMarketPrices(); window.renderProficiency();
@@ -1084,7 +1096,7 @@
       }).join('');
     };
 
-    window.renderStackDOM = function(stack, isDragging = false, isViewOnly = false) {
+    window.renderStackDOM = function(stack, isDragging = false, isViewOnly = false, stackIdx = 0) {
       let cardsHtml = stack.cards.map((cardId, idx) => {
         const t = TILES[cardId] || TILES.wood; 
         return `<div class="game-card ${t.cardClass} ${isViewOnly?'pointer-events-none':'pointer-events-auto cursor-grab'}" data-stack-id="${stack.id}" data-card-idx="${idx}" style="top: ${idx * 28}px; z-index: ${idx};" ${isDragging||isViewOnly?'':`onmouseenter="window.showTooltip('${cardId}', event)" onmouseleave="window.hideTooltip()" onmousemove="window.moveTooltip(event)"`}><div class="drop-shadow-sm mb-1">${t.icon.replace('text-3xl', 'text-2xl')}</div><span class="text-[10px] font-black">${t.name}</span></div>`;
@@ -1096,7 +1108,7 @@
         const ip = stack.crafting.left === stack.crafting.total;
         craftHtml = `<div class="absolute w-[4.5rem] h-[6.5rem] rounded-[0.75rem] bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center border-2 ${ip?'border-sky-300':'border-amber-400'} z-[99]" style="top: ${(stack.cards.length-1)*28}px; pointer-events: none;"><span class="text-[9px] font-black ${ip?'text-sky-100':'text-amber-400'} mb-1 leading-tight text-center px-1 break-keep">${ip?'제작 준비:<br>':'제작 중:<br>'}${rn}</span><div class="text-2xl font-black text-white ${ip?'':'animate-pulse'}">${stack.crafting.left} <span class="text-xs">T</span></div><div class="w-10 h-1.5 bg-slate-700 rounded-full mt-1.5 overflow-hidden"><div class="h-full ${ip?'bg-sky-300':'bg-amber-400'} transition-all" style="width: ${(1-stack.crafting.left/stack.crafting.total)*100}%"></div></div></div>`;
       }
-      return `<div ${isDragging?'id="dragging-stack"':''} class="absolute" style="left: ${stack.x}px; top: ${stack.y}px; z-index: ${isDragging?999:10}; ${isDragging?'opacity: 0.95; transform: scale(1.05);':''}">${cardsHtml}${craftHtml}</div>`;
+      return `<div ${isDragging?'id="dragging-stack"':''} class="absolute" style="left: ${stack.x}px; top: ${stack.y}px; z-index: ${isDragging?999:10+stackIdx}; ${isDragging?'opacity: 0.95; transform: scale(1.05);':''}">${cardsHtml}${craftHtml}</div>`;
     };
 
     window.renderRecipeList = function() {
@@ -1112,7 +1124,6 @@
       document.getElementById('news-list').innerHTML = window.state.newsHistory.map(n => `<div class="flex flex-col bg-slate-50 p-3 rounded-2xl border border-slate-100 shadow-sm"><div class="flex items-center gap-2 mb-1"><span class="text-[10px] font-black text-white bg-slate-400 px-2 py-0.5 rounded-full">Turn ${n.turn}</span>${n.type === 'up' ? '<i class="ph-bold ph-trend-up text-emerald-500 text-lg"></i>' : n.type === 'down' ? '<i class="ph-bold ph-trend-down text-red-500 text-lg"></i>' : '<i class="ph-bold ph-minus text-slate-400 text-lg"></i>'}</div><p class="text-xs font-bold text-slate-700">${n.msg}</p></div>`).join('');
     };
 
-    // --- Trade UI ---
     window.toggleTradeModal = function() {
       const m = document.getElementById('modal-trade');
       if(m.classList.contains('hidden')) { m.classList.remove('hidden'); m.classList.add('flex'); window.renderTradeUI(); setTimeout(()=> { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10); } 
@@ -1123,7 +1134,6 @@
       if(document.getElementById('modal-trade').classList.contains('hidden')) return;
       const c = document.getElementById('trade-dynamic-content');
       
-      // 1. 거래 진행 중이 아닐 때 (선택 화면)
       if (!window.state.activeTrade) {
          let opts = `<option value="">거래할 상대를 선택하세요</option>`;
          window.state.playerIds.forEach(p => { if (p !== window.state.myPlayerId) opts += `<option value="${p}">${p}</option>`; });
@@ -1135,13 +1145,11 @@
       const isPA = tr.pA === window.state.myPlayerId;
       const isPB = tr.pB === window.state.myPlayerId;
 
-      // 2. 다른 플레이어끼리 거래 중인 것을 관전할 때
       if (!isPA && !isPB) {
          c.innerHTML = `<div class="p-8 w-full text-center text-slate-500 font-bold min-h-[300px] flex items-center justify-center">현재 ${tr.pA} 님과 ${tr.pB} 님이 거래를 진행/준비 중입니다.<br>끝날 때까지 잠시 기다려 주세요.</div>`;
          return;
       }
 
-      // 3. 거래 요청 대기 상태일 때
       if (tr.status === 'requested') {
           if (isPA) {
               c.innerHTML = `<div class="p-8 w-full text-center flex flex-col items-center justify-center min-h-[300px]"><h3 class="text-xl font-black text-slate-700 mb-6">${tr.pB}님의 수락을 기다리는 중입니다... ⏳</h3><button onclick="window.cancelTrade()" class="bg-rose-500 text-white font-black px-8 py-3 rounded-xl hover:bg-rose-400 shadow-md">요청 취소</button></div>`;
@@ -1151,7 +1159,6 @@
           return;
       }
 
-      // 4. 본격적인 거래(협상) 테이블
       const oppName = isPA ? tr.pB : tr.pA;
       const myTrade = isPA ? {money: tr.pAMoney, items: tr.pAItems, accept: tr.pAAccept} : {money: tr.pBMoney, items: tr.pBItems, accept: tr.pBAccept};
       const oppTrade = isPA ? {money: tr.pBMoney, items: tr.pBItems, accept: tr.pBAccept} : {money: tr.pAMoney, items: tr.pAItems, accept: tr.pAAccept};
@@ -1263,7 +1270,6 @@
       await updateDoc(roomRef, { [`activeTrade.${isPA ? 'pAAccept' : 'pBAccept'}`]: true });
     };
 
-    // --- Chat UI ---
     window.toggleChat = function() {
       const c = document.getElementById('chat-container'); const ic = document.getElementById('chat-icon');
       window.state.isChatOpen = !window.state.isChatOpen;
@@ -1290,7 +1296,6 @@
       input.value = '';
     };
 
-    // --- Cleanup ---
     window.addEventListener("beforeunload", (e) => {
         if (window.state.mode.startsWith('multi') && window.state.roomId && user) {
             const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
