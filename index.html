@@ -62,10 +62,12 @@
 </head>
 <body class="bg-gradient-to-br from-sky-100 via-blue-50 to-indigo-100 h-screen text-slate-800 relative">
 
+  <!-- 배경 구름 -->
   <i class="ph-fill ph-cloud absolute -top-10 -left-10 text-white/60 text-[250px] pointer-events-none animate-float"></i>
   <i class="ph-fill ph-cloud absolute top-40 right-10 text-white/50 text-[150px] pointer-events-none animate-float delay-1000"></i>
   <i class="ph-fill ph-cloud absolute bottom-0 -right-20 text-white/70 text-[350px] pointer-events-none animate-float delay-2000"></i>
 
+  <!-- 1. 메인 메뉴 -->
   <div id="screen-menu" class="absolute inset-0 flex flex-col items-center justify-center z-50 transition-opacity duration-500">
     <div class="bg-white/80 p-12 md:p-16 rounded-[3rem] backdrop-blur-xl border border-white shadow-[0_20px_60px_rgba(0,0,0,0.05)] text-center flex flex-col items-center max-w-3xl w-full mx-4 relative overflow-hidden">
       <h1 class="text-5xl md:text-7xl font-black mb-4 tracking-tighter text-sky-600 drop-shadow-sm">스카이 타이쿤</h1>
@@ -92,10 +94,12 @@
         </button>
       </div>
 
+      <!-- 업데이트 내역 패널 -->
       <div class="mt-8 w-full max-w-2xl bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm text-left max-h-40 overflow-y-auto custom-scroll">
         <h3 class="text-sm font-black text-slate-800 mb-3 flex items-center gap-1"><i class="ph-bold ph-megaphone text-amber-500 text-lg"></i> 최근 업데이트 내역</h3>
         <ul class="text-[11px] text-slate-600 space-y-2 font-bold">
           <li><span class="text-white bg-indigo-500 px-1.5 py-0.5 rounded mr-1">v1.1</span><span class="text-indigo-700 font-black">50턴 대격변 & 숙련도 전문화 패치</span></li>
+          <li class="pl-2 border-l-2 border-indigo-100">- <b>버그픽스:</b> 재료가 소모되지 않고 무한 복사되던 연금술 버그를 수정했습니다.</li>
           <li class="pl-2 border-l-2 border-indigo-100">- <b>턴 & 농사:</b> 최대 50턴 기준. 탈곡 레시피가 [농장+주민+밀]로 변경되며 씨앗이 3~4개씩 드랍됩니다! (바위 소모 X)</li>
           <li class="pl-2 border-l-2 border-indigo-100">- <b>전문가의 특권:</b> 분야별 숙련도 <span class="text-amber-500">Lv.3 달성 시 해당 건물 결과물 2배</span>! <span class="text-purple-500">Lv.4 달성 시 2티어 특산물 1턴 단축</span>!</li>
           <li class="pl-2 border-l-2 border-indigo-100">- <b>경제 스케일업:</b> 기초 가공품은 하위재료의 1.8배, 1티어 특산물 2.0배, 2티어 특산물 2.8배로 시장 가치가 대폭 상향되었습니다.</li>
@@ -105,6 +109,7 @@
     </div>
   </div>
 
+  <!-- 멀티플레이 로비 모달 -->
   <div id="modal-lobby" class="fixed inset-0 z-[200] hidden flex-col items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 opacity-0 transition-opacity" onclick="window.hideLobby()">
     <div class="bg-white border border-slate-200 w-full max-w-md rounded-[2rem] shadow-2xl flex flex-col transform scale-95 transition-transform overflow-hidden p-8" onclick="event.stopPropagation()">
       <h2 class="text-2xl font-black text-indigo-600 mb-6 text-center">멀티플레이 접속</h2>
@@ -129,6 +134,7 @@
     </div>
   </div>
 
+  <!-- 대기실 화면 -->
   <div id="screen-waiting" class="absolute inset-0 flex flex-col items-center justify-center z-40 hidden opacity-0 transition-opacity duration-500">
     <div class="bg-white/90 p-12 rounded-[3rem] backdrop-blur-xl border border-white shadow-2xl text-center max-w-lg w-full">
        <h2 class="text-4xl font-black text-indigo-600 mb-2">대기실</h2>
@@ -146,6 +152,7 @@
     </div>
   </div>
 
+  <!-- 특산물 선택 모달 -->
   <div id="modal-specialty" class="fixed inset-0 z-[300] hidden flex-col items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 opacity-0 transition-opacity">
     <div class="w-full max-w-4xl flex flex-col transform scale-95 transition-transform p-4">
       <div class="text-center mb-8">
@@ -157,6 +164,7 @@
     </div>
   </div>
 
+  <!-- 게임 화면 -->
   <div id="screen-game" class="absolute inset-0 flex flex-col p-4 md:p-6 z-10 hidden opacity-0 transition-opacity duration-500 pointer-events-none">
     
     <div class="flex items-center justify-between gap-4 bg-white/80 p-3 rounded-[2rem] border border-white shadow-md backdrop-blur-xl mb-4 shrink-0 relative z-20 pointer-events-auto">
@@ -201,6 +209,7 @@
       </div>
     </div>
 
+    <!-- 플레이 영역 -->
     <div class="flex-1 flex gap-4 overflow-hidden pointer-events-auto h-full relative">
       
       <div class="flex-1 relative bg-white/50 rounded-[3rem] border-2 border-white shadow-xl backdrop-blur-md overflow-hidden" id="board-container">
@@ -420,7 +429,6 @@
       furnace: { name: '화로', category: 'cooking', cardClass: 'bg-orange-600 text-white border-orange-800', textColor: 'text-orange-700', icon: '<i class="ph-fill ph-campfire text-3xl"></i>', basePrice: 0 },
       well: { name: '우물', category: 'farming', cardClass: 'bg-blue-300 text-blue-900 border-blue-500', textColor: 'text-blue-800', icon: '<i class="ph-fill ph-drop text-3xl text-blue-600"></i>', basePrice: 0 },
       
-      // 특산물 티어 표시 추가
       mana_crystal: { name: '마나석', tier: 1, ingredients: ['water', 'stone', 'fire'], category: 'mining', cardClass: 'bg-indigo-200 text-indigo-900 border-indigo-500', textColor: 'text-indigo-800', icon: '<i class="ph-fill ph-sketch-logo text-3xl text-indigo-600"></i>', basePrice: 450, volatility: 2.0 },
       golden_apple: { name: '황금사과', tier: 1, ingredients: ['seed', 'wood', 'water'], category: 'farming', cardClass: 'bg-yellow-300 text-yellow-900 border-yellow-500', textColor: 'text-yellow-800', icon: '<i class="ph-fill ph-apple-logo text-3xl text-red-500"></i>', basePrice: 500, volatility: 1.5 },
       sky_cloth: { name: '천공의 천', tier: 1, ingredients: ['wheat', 'fire', 'water'], category: 'woodcraft', cardClass: 'bg-sky-100 text-sky-800 border-sky-400', textColor: 'text-sky-700', icon: '<i class="ph-fill ph-scroll text-3xl text-sky-500"></i>', basePrice: 600, volatility: 1.2 },
@@ -447,10 +455,7 @@
       { id: 'c1', category: 'woodcraft', inputs: ['wood', 'fire'], results: ['charcoal'], turns: 1, desc: '목탄 굽기' },
       { id: 'r1', category: 'smithing', inputs: ['fire', 'stone'], results: ['iron'], turns: 1, desc: '철 제련' },
       { id: 'r2', category: 'cooking', inputs: ['fire', 'wheat'], results: ['bread'], turns: 1, desc: '제빵' },
-      
-      // [수정됨] 농사 탈곡 레시피 변경 (씨앗 3~4개 지급)
       { id: 'r8', category: 'farming', inputs: ['farm', 'villager', 'wheat'], results: ['farm', 'villager', 'seed', 'seed', 'seed'], turns: 1, desc: '탈곡 (대량 추출)' }, 
-      
       { id: 'p_p1', category: 'woodcraft', inputs: ['wood', 'water'], results: ['paper'], turns: 1, desc: '종이 만들기' },
       { id: 'c2', category: 'smithing', inputs: ['charcoal', 'iron'], results: ['steel'], turns: 2, desc: '강철 제련' },
       { id: 'c3', category: 'mining', inputs: ['charcoal', 'stone', 'stone'], results: ['brick'], turns: 2, desc: '벽돌 굽기' },
@@ -822,17 +827,13 @@
           if (stack.crafting.left <= 0) {
             const recipe = RECIPES.find(r => r.id === stack.crafting.recipeId);
             
-            // 제작물 계산
-            let newItems = [...recipe.results];
-            recipe.inputs.forEach(inp => {
-                let idx = newItems.indexOf(inp);
-                if(idx !== -1) newItems.splice(idx, 1);
-            });
+            // [버그 수정] 기본적으로 레시피의 'results' 배열에 정의된 아이템만 남깁니다.
+            let finalCards = [...recipe.results];
 
-            // [신규 로직] r8 탈곡(씨앗 추출) 50% 확률로 1개 추가 드랍 (총 3~4개)
-            if (recipe.id === 'r8' && Math.random() < 0.5) newItems.push('seed'); 
-
-            let finalCards = [...recipe.inputs]; // 소모 안되는 건물/주민 등 반환
+            // 특수 로직: r8 탈곡의 경우 50% 확률로 씨앗 1개 추가 드랍
+            if (recipe.id === 'r8' && Math.random() < 0.5) {
+                finalCards.push('seed'); 
+            }
             
             // 숙련도 계산 및 특수 로직 (전문화)
             if (recipe.category && recipe.category !== 'general') {
@@ -841,15 +842,18 @@
                p.exp += 1;
                p.lv = Math.min(5, Math.floor(p.exp / 3) + 1); // 최대 5레벨
 
-               // [신규 로직] Lv.3 특성 - 동일 카테고리 건물 생산량 2배
+               // Lv.3 특성 - 동일 카테고리 건물 생산량 2배
                let isBuildingProd = recipe.inputs.includes('villager') && recipe.inputs.some(i => ['lumber_mill', 'quarry', 'farm', 'furnace', 'well'].includes(i));
                
                if (p.lv >= 3 && isBuildingProd) {
-                   finalCards.push(...newItems);
+                   // results 안에서 건물/주민을 제외한 "순수 생산물"만 한 번 더 복사하여 지급
+                   let newItems = [...recipe.results];
+                   recipe.inputs.forEach(inp => {
+                       let idx = newItems.indexOf(inp);
+                       if(idx !== -1) newItems.splice(idx, 1);
+                   });
                    finalCards.push(...newItems); // 2배 복사!
                    if(oldLv === p.lv) window.notify(`${CAT_INFO[recipe.category].name} 전문화(Lv.3): 생산량 2배!`, 'success');
-               } else {
-                   finalCards.push(...newItems);
                }
 
                if(p.lv > oldLv) {
@@ -858,7 +862,6 @@
                   window.notify(`${recipe.desc} 완성! ✨`, "success");
                }
             } else {
-               finalCards.push(...newItems);
                window.notify(`${recipe.desc} 완성! ✨`, "success");
             }
             
@@ -891,7 +894,6 @@
               let ingredientCostSum = 0;
               TILES[id].ingredients.forEach(ing => { ingredientCostSum += (window.state.market[ing]?.currentPrice || TILES[ing].basePrice); });
               
-              // [신규 로직] 시장 경제 배수 상향 적용
               let multiplier = 1.8;
               if (TILES[id].tier === 1) multiplier = 2.0;
               else if (TILES[id].tier === 2) multiplier = 2.8;
@@ -926,7 +928,6 @@
       const matched = RECIPES.filter(r => !r.isSpecialty || r.unlockId === window.state.unlockedSpecialty).find(r => [...r.inputs].sort().join(',') === currentSorted);
       if (matched) { 
           let turns = matched.turns;
-          // [신규 로직] Lv.4 특성 - 동일 카테고리 2티어 특산물 제작 시간 1턴 단축
           if (matched.tier === 2 && window.state.prof[matched.category] && window.state.prof[matched.category].lv >= 4) {
               turns = Math.max(1, turns - 1);
           }
@@ -966,7 +967,6 @@
       location.reload();
     };
 
-    // --- Sync & Trade Logics ---
     window.startSync = function(roomRef) {
       window.unsubSnapshot = onSnapshot(roomRef, (docSnap) => {
         if (!docSnap.exists()) return;
@@ -1103,7 +1103,6 @@
        return stacks.map(s => ({ id: s.id || `s${window.nextStackId++}`, xRatio: s.x / w, yRatio: s.y / h, cards: s.cards, crafting: s.crafting }));
     };
 
-    // --- Drag Events ---
     const boardArea = document.getElementById('board-area');
     boardArea.addEventListener('pointerdown', e => {
       if (window.state.viewingOpponent || window.state.isGameOver) return;
@@ -1200,7 +1199,6 @@
       window.state.draggingStack = null; window.dragData = null; window.renderAll(); window.fb_syncMyState();
     });
 
-    // --- UI Render ---
     window.renderAll = function() {
       document.getElementById('score').innerText = window.state.money;
       
