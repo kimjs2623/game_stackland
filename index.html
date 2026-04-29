@@ -65,10 +65,12 @@
 </head>
 <body class="bg-gradient-to-br from-sky-100 via-blue-50 to-indigo-100 h-screen text-slate-800 relative">
 
+  <!-- 배경 구름 -->
   <i class="ph-fill ph-cloud absolute -top-10 -left-10 text-white/60 text-[250px] pointer-events-none animate-float"></i>
   <i class="ph-fill ph-cloud absolute top-40 right-10 text-white/50 text-[150px] pointer-events-none animate-float delay-1000"></i>
   <i class="ph-fill ph-cloud absolute bottom-0 -right-20 text-white/70 text-[350px] pointer-events-none animate-float delay-2000"></i>
 
+  <!-- 1. 메인 메뉴 -->
   <div id="screen-menu" class="absolute inset-0 flex flex-col items-center justify-center z-50 transition-opacity duration-500">
     <div class="bg-white/90 p-10 md:p-14 rounded-[3rem] backdrop-blur-xl border border-white shadow-[0_20px_60px_rgba(0,0,0,0.05)] text-center flex flex-col items-center max-w-3xl w-full mx-4 relative overflow-hidden">
       <h1 class="text-5xl md:text-7xl font-black mb-4 tracking-tighter text-sky-600 drop-shadow-sm">스카이 타이쿤</h1>
@@ -104,6 +106,7 @@
          <i class="ph-bold ph-trophy text-amber-500 text-lg group-hover:scale-110 transition-transform"></i> 명예의 전당 보기
       </button>
 
+      <!-- 최근 업데이트 내역 -->
       <div class="mt-6 w-full max-w-2xl bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-left max-h-40 overflow-y-auto custom-scroll relative">
         <div class="sticky top-0 bg-white pb-2 border-b border-slate-100 mb-3 z-10 flex items-center justify-between">
             <h3 class="text-sm font-black text-slate-800 flex items-center gap-1"><i class="ph-bold ph-megaphone text-amber-500 text-lg"></i> 최근 업데이트 노트</h3>
@@ -131,6 +134,7 @@
     </div>
   </div>
 
+  <!-- 리더보드 모달 -->
   <div id="modal-leaderboard" class="fixed inset-0 z-[400] hidden flex-col items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 opacity-0 transition-opacity" onclick="window.closeLeaderboard()">
     <div class="bg-white border border-slate-200 w-full max-w-lg rounded-[2rem] shadow-2xl flex flex-col transform scale-95 transition-transform overflow-hidden" onclick="event.stopPropagation()">
       <div class="p-5 pb-3 border-b border-slate-100 shrink-0 bg-amber-50 flex justify-between items-center">
@@ -196,6 +200,7 @@
     </div>
   </div>
 
+  <!-- 특산물 선택 모달 -->
   <div id="modal-specialty" class="fixed inset-0 z-[300] hidden flex-col items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 opacity-0 transition-opacity">
     <div class="w-full max-w-4xl flex flex-col transform scale-95 transition-transform p-4">
       <div class="text-center mb-8">
@@ -207,6 +212,7 @@
     </div>
   </div>
 
+  <!-- 기술 연구 (Tech) 모달 -->
   <div id="modal-tech" class="fixed inset-0 z-[300] hidden flex-col items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 opacity-0 transition-opacity" onclick="window.toggleTechModal()">
     <div class="bg-white border border-slate-200 w-full max-w-4xl rounded-[2rem] shadow-2xl flex flex-col transform scale-95 transition-transform overflow-hidden" onclick="event.stopPropagation()">
       <div class="p-5 pb-3 border-b border-slate-100 shrink-0 bg-indigo-50 flex justify-between items-center">
@@ -219,10 +225,11 @@
         </div>
       </div>
       <div class="p-6 bg-white grid grid-cols-1 md:grid-cols-3 gap-6" id="tech-options">
-         </div>
+      </div>
     </div>
   </div>
 
+  <!-- 퀘스트 (Draft) 모달 -->
   <div id="modal-quest" class="fixed inset-0 z-[350] hidden flex-col items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 opacity-0 transition-opacity">
     <div class="w-full max-w-4xl flex flex-col transform scale-95 transition-transform p-4">
       <div class="text-center mb-8">
@@ -233,6 +240,7 @@
     </div>
   </div>
 
+  <!-- 게임 화면 -->
   <div id="screen-game" class="absolute inset-0 flex flex-col p-4 md:p-6 z-10 hidden opacity-0 transition-opacity duration-500 pointer-events-none">
     
     <div class="flex items-center justify-between gap-4 bg-white/80 p-3 rounded-[2rem] border border-white shadow-md backdrop-blur-xl mb-4 shrink-0 relative z-20 pointer-events-auto">
@@ -260,6 +268,7 @@
       </div>
 
       <div class="flex gap-2 w-1/3 justify-end items-center">
+        <!-- 퀘스트 현황 박스 -->
         <div id="active-quest-box" class="hidden flex-col items-end mr-4 text-right bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 shadow-sm">
            <span class="text-[9px] font-black text-amber-500 uppercase">활성 의뢰 <i class="ph-bold ph-clock"></i> <span id="quest-timer"></span></span>
            <div class="flex items-center gap-2">
@@ -277,25 +286,29 @@
       </div>
     </div>
 
+    <!-- 플레이 영역 -->
     <div class="flex-1 flex gap-4 overflow-hidden pointer-events-auto h-full relative">
       
+      <!-- 보드 래퍼 -->
       <div class="flex-1 relative bg-white/50 rounded-[3rem] border-2 border-white shadow-xl backdrop-blur-md overflow-hidden flex flex-col" id="board-container">
         
         <div id="board-wrapper" class="w-full h-full overflow-auto custom-scroll relative bg-slate-50/50">
           <div id="board-area" class="absolute top-0 left-0 w-[2400px] h-[1600px]" style="transform-origin: top left; transform: scale(1.0);">
-             </div>
+          </div>
         </div>
         
+        <!-- 줌 컨트롤러 -->
         <div class="absolute bottom-6 left-6 flex items-center gap-2 bg-white/90 p-2 rounded-2xl shadow-lg border border-slate-200 z-[60] backdrop-blur-md">
             <button onclick="window.setZoom(-0.1)" class="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-sky-100 hover:text-sky-600 rounded-xl font-bold text-slate-600 transition-colors"><i class="ph-bold ph-minus"></i></button>
             <span id="zoom-level-text" class="text-xs font-black text-slate-700 w-10 text-center">100%</span>
             <button onclick="window.setZoom(0.1)" class="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-sky-100 hover:text-sky-600 rounded-xl font-bold text-slate-600 transition-colors"><i class="ph-bold ph-plus"></i></button>
         </div>
 
+        <!-- 창고 패널 -->
         <div id="warehouse-panel" class="absolute top-6 left-6 bg-white/90 rounded-2xl border-2 border-stone-200 shadow-xl backdrop-blur-md p-4 w-64 z-[60] hidden flex-col">
-            <h3 class="font-black text-slate-800 text-xs mb-2 flex items-center gap-1"><i class="ph-fill ph-package text-stone-600 text-lg"></i> 대형 창고 <span class="text-[9px] font-normal text-slate-500">(클릭하여 꺼내기)</span></h3>
+            <h3 class="font-black text-slate-800 text-xs mb-2 flex items-center gap-1"><i class="ph-fill ph-package text-stone-600 text-lg"></i> 대형 창고 <span class="text-[9px] font-normal text-slate-500">(클릭 꺼내기)</span></h3>
             <div id="warehouse-items-container" class="flex flex-wrap gap-2 overflow-y-auto custom-scroll max-h-[250px] p-1">
-                </div>
+            </div>
         </div>
         
         <div id="market-zone" class="absolute bottom-6 right-6 w-36 h-36 bg-amber-50/90 border-4 border-dashed border-amber-300 rounded-[2rem] flex flex-col items-center justify-center transition-all z-[60] shadow-sm backdrop-blur-sm">
@@ -364,16 +377,6 @@
     <div class="flex gap-4 mt-8">
         <button onclick="window.showLeaderboardModal()" class="px-10 py-4 bg-white text-slate-700 font-black rounded-full text-lg hover:bg-slate-50 transition-all shadow-lg border-2 border-slate-200">랭킹 확인</button>
         <button onclick="window.cleanupAndLeave()" class="px-10 py-4 bg-slate-800 text-white font-black rounded-full text-lg hover:bg-slate-700 transition-all shadow-xl border-4 border-slate-600">메인 메뉴로 돌아가기</button>
-    </div>
-  </div>
-
-  <div id="modal-recipe" class="fixed inset-0 z-[200] hidden flex-col items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 opacity-0 transition-opacity" onclick="window.toggleRecipeModal()">
-    <div class="bg-white border border-slate-200 w-full max-w-4xl rounded-[2rem] shadow-2xl flex flex-col transform scale-95 transition-transform overflow-hidden" style="max-height: 85vh;" onclick="event.stopPropagation()">
-      <div class="p-5 pb-3 border-b border-slate-100 shrink-0 bg-slate-50 flex justify-between items-center">
-        <h2 class="text-xl font-black text-sky-600 flex items-center gap-2"><i class="ph-bold ph-book-open"></i> 제조 및 건설 가이드</h2>
-        <button onclick="window.toggleRecipeModal()" class="text-slate-400 hover:text-slate-700"><i class="ph-bold ph-x text-2xl"></i></button>
-      </div>
-      <div id="recipe-list" class="flex-1 custom-scroll p-5 space-y-3 bg-white overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4"></div>
     </div>
   </div>
 
@@ -487,13 +490,8 @@
       ancient_scroll: { name: '고대 마도서', tier: 2, ingredients: ['magic_book', 'paper'], category: 'woodcraft', cardClass: 'bg-yellow-600 text-yellow-100 border-yellow-800', textColor: 'text-yellow-900', icon: '<i class="ph-fill ph-scroll text-3xl text-yellow-300"></i>', basePrice: 2300, volatility: 1.7 }
     };
 
-    const SELLABLE_ITEMS = [
-      'wood', 'stone', 'water', 'fire', 'seed', 'wheat', 'charcoal', 'iron', 'brick', 'steel', 'bread', 'paper', 'research', 
-      'mana_crystal', 'golden_apple', 'sky_cloth', 'golem_core', 'fairy_bread', 'magic_book',
-      'elixir', 'star_fruit', 'magic_carpet', 'mecha_golem', 'ambrosia', 'ancient_scroll'
-    ];
+    const SELLABLE_ITEMS = ['wood', 'stone', 'water', 'fire', 'seed', 'wheat', 'charcoal', 'iron', 'brick', 'steel', 'bread', 'paper', 'research', 'mana_crystal', 'golden_apple', 'sky_cloth', 'golem_core', 'fairy_bread', 'magic_book', 'elixir', 'star_fruit', 'magic_carpet', 'mecha_golem', 'ambrosia', 'ancient_scroll'];
     const CAT_INFO = { farming: { icon: '<i class="ph-fill ph-plant text-lime-500"></i>', name: '농업' }, mining: { icon: '<i class="ph-fill ph-diamond text-stone-500"></i>', name: '채광' }, woodcraft: { icon: '<i class="ph-fill ph-axe text-emerald-500"></i>', name: '목공' }, cooking: { icon: '<i class="ph-fill ph-campfire text-orange-500"></i>', name: '요리' }, smithing: { icon: '<i class="ph-fill ph-hammer text-slate-500"></i>', name: '제련' } };
-
     const PROCESSING_ITEMS = ['charcoal', 'iron', 'paper', 'bread', 'brick', 'steel'];
     const TIER1_ITEMS = ['mana_crystal', 'golden_apple', 'sky_cloth', 'golem_core', 'fairy_bread', 'magic_book'];
     const TIER2_ITEMS = ['elixir', 'star_fruit', 'magic_carpet', 'mecha_golem', 'ambrosia', 'ancient_scroll'];
@@ -507,33 +505,27 @@
       { id: 'p_p1', category: 'woodcraft', inputs: ['wood', 'water'], results: ['paper'], turns: 1, desc: '종이 만들기' },
       { id: 'c2', category: 'smithing', inputs: ['charcoal', 'iron'], results: ['steel'], turns: 2, desc: '강철 제련' },
       { id: 'c3', category: 'mining', inputs: ['charcoal', 'stone', 'stone'], results: ['brick'], turns: 2, desc: '벽돌 굽기' },
-      
       { id: 'r3', category: 'woodcraft', inputs: ['stone', 'wood'], results: ['lumber_mill'], turns: 2, desc: '벌목장 건설' },
       { id: 'r4', category: 'mining', inputs: ['iron', 'stone'], results: ['quarry'], turns: 2, desc: '채석장 건설' },
       { id: 'r5', category: 'farming', inputs: ['seed', 'water'], results: ['farm'], turns: 2, desc: '농장 건설' },
       { id: 'r6', category: 'woodcraft', inputs: ['iron', 'wood'], results: ['house'], turns: 2, desc: '오두막 건설' },
-      
       { id: 'r_f1', category: 'cooking', inputs: ['wood', 'stone', 'fire'], results: ['furnace'], turns: 2, desc: '화로 건설' },
       { id: 'p_f1', category: 'cooking', inputs: ['furnace', 'villager', 'wood'], results: ['furnace', 'villager', 'fire', 'fire'], turns: 1, desc: '불 피우기' },
       { id: 'r_w1', category: 'farming', inputs: ['stone', 'wood', 'water'], results: ['well'], turns: 2, desc: '우물 건설' },
       { id: 'p_w1', category: 'farming', inputs: ['well', 'villager'], results: ['well', 'villager', 'water', 'water'], turns: 1, desc: '물 긷기' },
-
       { id: 'l1', category: 'general', inputs: ['stone', 'iron', 'wood'], results: ['laboratory'], turns: 3, desc: '연구소 건설' },
       { id: 'r7', category: 'general', inputs: ['house', 'bread'], results: ['villager'], turns: 2, desc: '주민 영입 (오두막 소모)' },
       { id: 'b_w1', category: 'general', inputs: ['brick', 'brick', 'brick', 'steel'], results: ['warehouse_building'], turns: 3, desc: '대형 창고 건설' },
-      
       { id: 'p1', category: 'woodcraft', inputs: ['lumber_mill', 'villager'], results: ['lumber_mill', 'villager', 'wood'], turns: 1, desc: '벌목 작업' },
       { id: 'p2', category: 'mining', inputs: ['quarry', 'villager'], results: ['quarry', 'villager', 'stone'], turns: 1, desc: '채석 작업' },
       { id: 'p3', category: 'farming', inputs: ['farm', 'seed', 'villager'], results: ['farm', 'villager', 'wheat'], turns: 2, desc: '밀 경작' },
       { id: 'l2', category: 'general', inputs: ['laboratory', 'paper', 'villager'], results: ['laboratory', 'villager', 'research'], turns: 2, desc: '연구 진행' },
-
       { id: 's1', category: 'mining', tier: 1, inputs: ['water', 'stone', 'fire'], results: ['mana_crystal'], turns: 3, desc: '마나석 가공 (1티어)', isSpecialty: true, unlockId: 'mana_crystal' },
       { id: 's2', category: 'farming', tier: 1, inputs: ['seed', 'wood', 'water'], results: ['golden_apple'], turns: 3, desc: '황금사과 재배 (1티어)', isSpecialty: true, unlockId: 'golden_apple' },
       { id: 's3', category: 'woodcraft', tier: 1, inputs: ['wheat', 'fire', 'water'], results: ['sky_cloth'], turns: 3, desc: '천공의 천 직조 (1티어)', isSpecialty: true, unlockId: 'sky_cloth' },
       { id: 's7', category: 'mining', tier: 1, inputs: ['iron', 'stone', 'fire'], results: ['golem_core'], turns: 3, desc: '골렘 코어 조립 (1티어)', isSpecialty: true, unlockId: 'golem_core' },
       { id: 's8', category: 'cooking', tier: 1, inputs: ['bread', 'water', 'seed'], results: ['fairy_bread'], turns: 3, desc: '요정의 빵 굽기 (1티어)', isSpecialty: true, unlockId: 'fairy_bread' },
       { id: 's9', category: 'woodcraft', tier: 1, inputs: ['paper', 'water', 'fire'], results: ['magic_book'], turns: 3, desc: '마법 마도서 제작 (1티어)', isSpecialty: true, unlockId: 'magic_book' },
-      
       { id: 's4', category: 'cooking', tier: 2, inputs: ['mana_crystal', 'research', 'water'], results: ['elixir'], turns: 4, desc: '엘릭서 연성 (2티어)', isSpecialty: true, unlockId: 'mana_crystal' },
       { id: 's5', category: 'farming', tier: 2, inputs: ['golden_apple', 'research', 'seed'], results: ['star_fruit'], turns: 4, desc: '별빛열매 개량 (2티어)', isSpecialty: true, unlockId: 'golden_apple' },
       { id: 's6', category: 'woodcraft', tier: 2, inputs: ['sky_cloth', 'research', 'fire'], results: ['magic_carpet'], turns: 4, desc: '마법 양탄자 제작 (2티어)', isSpecialty: true, unlockId: 'sky_cloth' },
@@ -576,7 +568,7 @@
     
     window.nextStackId = 1; window.unsubSnapshot = null; window.dragData = null;
 
-    const normalizeCard = (c) => c.replace('_upgraded', '');
+    const normalizeCard = (c) => c ? c.replace('_upgraded', '') : '';
 
     window.notify = function(msg, type = 'info') {
       const container = document.getElementById('notif-container');
@@ -591,6 +583,7 @@
 
     window.showFloatingText = function(x, y, text, colorClass) {
        const board = document.getElementById('board-area');
+       if(!board) return;
        const el = document.createElement('div');
        el.className = `absolute z-[1000] font-black text-[13px] bg-white/90 border border-slate-200 px-3 py-1.5 rounded-lg drop-shadow-md animate-float-up ${colorClass}`;
        el.style.left = `${x}px`;
@@ -630,9 +623,32 @@
         document.getElementById('board-area').style.transform = `scale(${window.state.zoom})`;
     };
 
+    // [중요: 새로 추가/복구된 자바스크립트 기능들]
+    window.countItemOnBoard = function(itemId) {
+        let count = 0;
+        window.state.stacks.forEach(s => {
+            s.cards.forEach(c => { if(normalizeCard(c) === itemId) count++; });
+        });
+        return count;
+    };
+
+    window.removeItemsFromBoard = function(itemId, amount) {
+        let remaining = amount;
+        for (let i = 0; i < window.state.stacks.length && remaining > 0; i++) {
+            let s = window.state.stacks[i];
+            for (let j = s.cards.length - 1; j >= 0 && remaining > 0; j--) {
+                if (normalizeCard(s.cards[j]) === itemId) {
+                    s.cards.splice(j, 1);
+                    remaining--;
+                }
+            }
+        }
+        window.state.stacks = window.state.stacks.filter(s => s.cards.length > 0);
+    };
+
     window.toggleTechModal = function() {
         const m = document.getElementById('modal-tech');
-        const available = countItemOnBoard('research') + (window.state.warehouseItems['research'] || 0);
+        const available = window.countItemOnBoard('research') + (window.state.warehouseItems['research'] || 0);
         document.getElementById('tech-available-rd').innerText = available;
 
         const techUI = document.getElementById('tech-options');
@@ -668,7 +684,7 @@
     };
 
     window.unlockTech = function(techId, cost) {
-        let total = (window.state.warehouseItems['research'] || 0) + countItemOnBoard('research');
+        let total = (window.state.warehouseItems['research'] || 0) + window.countItemOnBoard('research');
         if (total < cost) return window.notify("연구 데이터가 부족합니다.", "error");
         
         let needed = cost;
@@ -677,7 +693,7 @@
             needed--;
         }
         if (needed > 0) {
-            removeItemsFromBoard('research', needed);
+            window.removeItemsFromBoard('research', needed);
         }
 
         window.state.tech[techId] = true;
@@ -686,27 +702,77 @@
         window.renderAll();
     };
 
-    window.countItemOnBoard = function(itemId) {
-        let count = 0;
-        window.state.stacks.forEach(s => {
-            s.cards.forEach(c => { if(normalizeCard(c) === itemId) count++; });
-        });
-        return count;
+    window.showQuestDraft = function() {
+        const m = document.getElementById('modal-quest');
+        const c = document.getElementById('quest-options');
+        
+        let pool = ['bread', 'iron', 'paper', 'brick'];
+        if (window.state.unlockedSpecialty) pool.push(window.state.unlockedSpecialty);
+        
+        pool = pool.sort(() => 0.5 - Math.random()).slice(0, 3);
+        
+        c.innerHTML = pool.map(id => {
+            let mult = (id === window.state.unlockedSpecialty) ? 2.0 : 1.5;
+            let reqCount = Math.floor(Math.random() * 2) + 2; 
+            let rReward = Math.floor(TILES[id].basePrice * reqCount * mult);
+            return `
+            <div onclick="window.acceptQuest('${id}', ${reqCount}, ${rReward})" class="bg-slate-800/80 hover:bg-slate-700/90 border-2 border-slate-600 hover:border-amber-400 p-8 rounded-3xl cursor-pointer transition-all transform hover:-translate-y-2 flex flex-col items-center shadow-xl group">
+              <div class="text-white drop-shadow-sm mb-2">${TILES[id].icon.replace('text-3xl', 'text-5xl')}</div>
+              <h3 class="text-xl font-black text-white mb-1 group-hover:text-amber-200">${TILES[id].name} ${reqCount}개 납품</h3>
+              <p class="text-amber-400 text-lg font-black bg-amber-900/50 px-4 py-1 rounded-full mt-2">보상: ${rReward} G</p>
+            </div>`;
+        }).join('');
+
+        m.classList.remove('hidden'); m.classList.add('flex');
+        setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10);
     };
 
-    window.removeItemsFromBoard = function(itemId, amount) {
-        let remaining = amount;
-        for (let i = 0; i < window.state.stacks.length && remaining > 0; i++) {
-            let s = window.state.stacks[i];
-            for (let j = s.cards.length - 1; j >= 0 && remaining > 0; j--) {
-                if (normalizeCard(s.cards[j]) === itemId) {
-                    s.cards.splice(j, 1);
-                    remaining--;
-                }
-            }
-        }
-        window.state.stacks = window.state.stacks.filter(s => s.cards.length > 0);
+    window.acceptQuest = function(reqItem, reqCount, reward) {
+        window.state.activeQuest = { reqItem, reqCount, reward };
+        window.state.questTimer = 5; 
+        const m = document.getElementById('modal-quest');
+        m.classList.add('opacity-0'); m.children[0].classList.add('scale-95');
+        setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
+        window.notify("새로운 의뢰를 수락했습니다!", "action");
+        window.renderAll();
     };
+
+    window.completeQuest = function() {
+        let q = window.state.activeQuest;
+        if (!q) return;
+        
+        let total = (window.state.warehouseItems[q.reqItem] || 0) + window.countItemOnBoard(q.reqItem);
+        if (total < q.reqCount) return window.notify(`${TILES[q.reqItem].name} ${q.reqCount}개가 필요합니다. (창고+보드)`, "error");
+
+        let needed = q.reqCount;
+        while(needed > 0 && window.state.warehouseItems[q.reqItem] > 0) {
+            window.state.warehouseItems[q.reqItem]--;
+            needed--;
+        }
+        if (needed > 0) {
+            window.removeItemsFromBoard(q.reqItem, needed);
+        }
+
+        window.state.money += q.reward;
+        window.state.activeQuest = null;
+        window.notify(`의뢰 완료! <span class="text-amber-500 font-black">+${q.reward} G</span>`, "success");
+        window.renderAll();
+    };
+
+    window.takeFromWarehouse = function(itemId) {
+        if (window.state.warehouseItems[itemId] > 0) {
+            window.state.warehouseItems[itemId]--;
+            const wrapper = document.getElementById('board-wrapper');
+            const br = document.getElementById('board-area').getBoundingClientRect();
+            const wrapperRect = wrapper.getBoundingClientRect();
+            const cx = (wrapperRect.left + wrapper.clientWidth / 2 - br.left) / window.state.zoom + (Math.random()-0.5)*50;
+            const cy = (wrapperRect.top + wrapper.clientHeight / 2 - br.top) / window.state.zoom + (Math.random()-0.5)*50;
+
+            window.state.stacks.push({ id: `s${window.nextStackId++}`, x: cx, y: cy, cards: [itemId], crafting: null });
+            window.renderAll();
+        }
+    };
+    // [자바스크립트 기능 복구 완료]
 
     window.toggleRecipeModal = function() {
       const m = document.getElementById('modal-recipe');
@@ -769,20 +835,6 @@
            document.getElementById('view-player-select').value = 'me';
        }
        window.renderAll();
-    };
-
-    window.startGame = function(mode) {
-      document.getElementById('screen-menu').classList.add('hidden');
-      if (mode === 'single') { window.state.mode = 'single'; window.initGame(); }
-    };
-
-    window.showLobby = function() {
-      const m = document.getElementById('modal-lobby'); m.classList.remove('hidden'); m.classList.add('flex');
-      setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10);
-    };
-    window.hideLobby = function() {
-      const m = document.getElementById('modal-lobby'); m.classList.add('opacity-0'); m.children[0].classList.add('scale-95');
-      setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
     };
 
     window.showLeaderboardModal = function(turns) {
@@ -865,6 +917,20 @@
         }
     };
 
+    window.startGame = function(mode) {
+      document.getElementById('screen-menu').classList.add('hidden');
+      if (mode === 'single') { window.state.mode = 'single'; window.initGame(); }
+    };
+
+    window.showLobby = function() {
+      const m = document.getElementById('modal-lobby'); m.classList.remove('hidden'); m.classList.add('flex');
+      setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10);
+    };
+    window.hideLobby = function() {
+      const m = document.getElementById('modal-lobby'); m.classList.add('opacity-0'); m.children[0].classList.add('scale-95');
+      setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
+    };
+
     window.createRoom = async function() {
       if (authErrorMsg) return window.notify(`서버 차단됨: ${authErrorMsg}`, "error");
       if (!isFirebaseReady || !user) return window.notify("서버 연결 중입니다. 잠시 후 다시 시도해주세요.", "error");
@@ -925,7 +991,7 @@
 
       const playersData = {};
       window.state.playerIds.forEach(pid => {
-         playersData[pid] = { money: 0, prof: { farming: {lv:1,exp:0}, mining: {lv:1,exp:0}, woodcraft: {lv:1,exp:0}, cooking: {lv:1,exp:0}, smithing: {lv:1,exp:0} }, stacks: initialStacks };
+         playersData[pid] = { money: 0, prof: { farming: {lv:1,exp:0}, mining: {lv:1,exp:0}, woodcraft: {lv:1,exp:0}, cooking: {lv:1,exp:0}, smithing: {lv:1,exp:0} }, tech: { tier_2: false, steel_upgrade: false, warehouse: false }, warehouseItems: {}, activeQuest: null, stacks: initialStacks };
       });
 
       window.initMarket();
@@ -949,6 +1015,9 @@
       
       const myData = data.playersData[window.state.myPlayerId];
       window.state.money = myData.money; window.state.prof = myData.prof; 
+      window.state.tech = myData.tech || { tier_2: false, steel_upgrade: false, warehouse: false };
+      window.state.warehouseItems = myData.warehouseItems || {};
+      window.state.activeQuest = myData.activeQuest || null;
       
       window.state.stacks = myData.stacks.map(s => ({...s, id: s.id || `s${window.nextStackId++}`}));
 
@@ -1045,64 +1114,6 @@
       window.evaluatePool(); window.renderAll(); window.fb_syncGlobalState();
     };
 
-    // [신규] 퀘스트 로직
-    window.showQuestDraft = function() {
-        const m = document.getElementById('modal-quest');
-        const c = document.getElementById('quest-options');
-        
-        let pool = ['bread', 'iron', 'paper', 'brick'];
-        if (window.state.unlockedSpecialty) pool.push(window.state.unlockedSpecialty);
-        
-        pool = pool.sort(() => 0.5 - Math.random()).slice(0, 3);
-        
-        c.innerHTML = pool.map(id => {
-            let mult = (id === window.state.unlockedSpecialty) ? 2.0 : 1.5;
-            let reqCount = Math.floor(Math.random() * 2) + 2; // 2~3
-            let rReward = Math.floor(TILES[id].basePrice * reqCount * mult);
-            return `
-            <div onclick="window.acceptQuest('${id}', ${reqCount}, ${rReward})" class="bg-slate-800/80 hover:bg-slate-700/90 border-2 border-slate-600 hover:border-amber-400 p-8 rounded-3xl cursor-pointer transition-all transform hover:-translate-y-2 flex flex-col items-center shadow-xl group">
-              <div class="text-white drop-shadow-sm mb-2">${TILES[id].icon.replace('text-3xl', 'text-5xl')}</div>
-              <h3 class="text-xl font-black text-white mb-1 group-hover:text-amber-200">${TILES[id].name} ${reqCount}개 납품</h3>
-              <p class="text-amber-400 text-lg font-black bg-amber-900/50 px-4 py-1 rounded-full mt-2">보상: ${rReward} G</p>
-            </div>`;
-        }).join('');
-
-        m.classList.remove('hidden'); m.classList.add('flex');
-        setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10);
-    };
-
-    window.acceptQuest = function(reqItem, reqCount, reward) {
-        window.state.activeQuest = { reqItem, reqCount, reward };
-        window.state.questTimer = 5; 
-        const m = document.getElementById('modal-quest');
-        m.classList.add('opacity-0'); m.children[0].classList.add('scale-95');
-        setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
-        window.notify("새로운 의뢰를 수락했습니다!", "action");
-        window.renderAll();
-    };
-
-    window.completeQuest = function() {
-        let q = window.state.activeQuest;
-        if (!q) return;
-        
-        let total = (window.state.warehouseItems[q.reqItem] || 0) + window.countItemOnBoard(q.reqItem);
-        if (total < q.reqCount) return window.notify(`${TILES[q.reqItem].name} ${q.reqCount}개가 필요합니다. (창고+보드)`, "error");
-
-        let needed = q.reqCount;
-        while(needed > 0 && window.state.warehouseItems[q.reqItem] > 0) {
-            window.state.warehouseItems[q.reqItem]--;
-            needed--;
-        }
-        if (needed > 0) {
-            window.removeItemsFromBoard(q.reqItem, needed);
-        }
-
-        window.state.money += q.reward;
-        window.state.activeQuest = null;
-        window.notify(`의뢰 완료! <span class="text-amber-500 font-black">+${q.reward} G</span>`, "success");
-        window.renderAll();
-    };
-
     window.handlePoolClick = function(poolIdx) {
       if (window.state.isGameOver) return;
       if (window.state.mode.startsWith('multi')) {
@@ -1128,7 +1139,6 @@
     };
 
     window.processTurnEnd = function() {
-      // 퀘스트 시간 감소
       if (window.state.activeQuest) {
           window.state.questTimer--;
           if (window.state.questTimer <= 0) {
@@ -1146,7 +1156,6 @@
             const recipe = RECIPES.find(r => r.id === stack.crafting.recipeId);
             let finalCards = [...recipe.results];
 
-            // 대풍년
             if (recipe.id === 'r8' && Math.random() < 0.5) {
                 finalCards.push('seed'); 
                 window.showFloatingText(stack.x + 10, stack.y - 30, "대풍년(씨앗+1)!", "text-lime-500");
@@ -1162,7 +1171,7 @@
             if (recipe.category && recipe.category !== 'general') {
                let p = window.state.prof[recipe.category];
                let oldLv = p.lv;
-               p.exp += 0.2; // [신규] 제작 시 0.2 상승
+               p.exp += 0.2; 
                p.lv = p.exp >= 50 ? 4 : (p.exp >= 20 ? 3 : (p.exp >= 10 ? 2 : 1));
 
                let isBuildingProd = recipe.inputs.includes('villager') && recipe.inputs.some(i => ['lumber_mill', 'quarry', 'farm', 'furnace', 'well'].includes(i));
@@ -1170,16 +1179,13 @@
                let multiplier = 1;
                if (p.lv >= 3 && isBuildingProd) {
                    multiplier = 2;
-                   if(oldLv < 3) window.notify(`${CAT_INFO[recipe.category].name} 전문화(Lv.3): 생산량 2배!`, 'success');
                }
 
-               // 순수 결과물 재계산
-               finalCards = [...recipe.results]; // 기본
-               // 배수에 맞게 추가
+               finalCards = [...recipe.results]; 
                for(let i=1; i<multiplier; i++){
                    finalCards.push(...pureOutputs);
                }
-               // 강철 업그레이드 합연산 추가
+               
                if (isUpgraded && isBuildingProd) {
                    finalCards.push(...pureOutputs);
                    window.showFloatingText(stack.x + 10, stack.y - 60, "강철 인프라 +1!", "text-slate-600");
@@ -1198,7 +1204,6 @@
                window.notify(`${recipe.desc} 완성! ✨`, "success");
             }
             
-            // 건물 업그레이드명 복구
             stack.cards.forEach(c => {
                 if (c.endsWith('_upgraded')) {
                     let base = c.replace('_upgraded', '');
@@ -1207,7 +1212,6 @@
                 }
             });
 
-            // [신규] 창고 자동 수집
             if (hasWarehouse) {
                 let toBoard = [];
                 finalCards.forEach(c => {
@@ -1231,7 +1235,6 @@
           }
         }
       });
-      // Filter out empty stacks from warehouse collection
       window.state.stacks = window.state.stacks.filter(s => s.cards.length > 0);
 
       let ev = null;
@@ -1245,7 +1248,6 @@
         window.showNewsSplash(ev.title, ev.msg, ev.type);
       }
 
-      // 퀘스트 발생
       if (window.state.turnCount % 5 === 0 && window.state.turnCount > 1) {
           window.showQuestDraft();
       }
@@ -1426,7 +1428,7 @@
     window.fb_syncMyState = async () => {
       if (!window.state.mode.startsWith('multi') || !user) return;
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
-      await updateDoc(roomRef, { [`playersData.${window.state.myPlayerId}`]: { money: window.state.money, prof: window.state.prof, stacks: window.serializeStacks(window.state.stacks) } });
+      await updateDoc(roomRef, { [`playersData.${window.state.myPlayerId}`]: { money: window.state.money, prof: window.state.prof, tech: window.state.tech, warehouseItems: window.state.warehouseItems, activeQuest: window.state.activeQuest, stacks: window.serializeStacks(window.state.stacks) } });
     };
 
     window.fb_syncGlobalState = async () => {
@@ -1462,8 +1464,7 @@
        if (window.state.myPlayerId === pA_id || window.state.myPlayerId === pB_id) {
            const myNewData = window.state.myPlayerId === pA_id ? {m: pA_money, s: newPAStacks} : {m: pB_money, s: newPBStacks};
            window.state.money = myNewData.m;
-           const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
-           window.state.stacks = myNewData.s.map(s => ({...s, id: s.id, x: s.xRatio * w, y: s.yRatio * h}));
+           window.state.stacks = myNewData.s.map(s => ({...s, id: s.id}));
            window.renderAll();
        }
     };
@@ -1481,7 +1482,6 @@
        return stacks.map(s => ({ id: s.id || `s${window.nextStackId++}`, x: s.x, y: s.y, cards: s.cards, crafting: s.crafting }));
     };
 
-    // --- Drag Events ---
     const boardArea = document.getElementById('board-area');
     boardArea.addEventListener('pointerdown', e => {
       if (window.state.viewingOpponent || window.state.isGameOver) return;
@@ -1552,7 +1552,6 @@
             if (m && TILES[pureId].basePrice > 0) { 
                 earned += window.getFinalPrice(pureId); m.pendingSupply += 1; success = true; 
                 
-                // [신규] 매각 XP 로직
                 if(TILES[pureId].category && TILES[pureId].category !== 'general'){
                     let p = window.state.prof[TILES[pureId].category];
                     let oldLv = p.lv;
@@ -1580,7 +1579,6 @@
       }
 
       if (ts) {
-        // [신규] 강철 강화 로직
         if (window.state.tech.steel_upgrade && window.state.draggingStack.cards.length === 1 && window.state.draggingStack.cards[0] === 'steel') {
             let topCard = normalizeCard(ts.cards[ts.cards.length - 1]);
             if (UPGRADABLE_BUILDINGS.includes(topCard) && !ts.cards[ts.cards.length - 1].endsWith('_upgraded')) {
@@ -1609,20 +1607,6 @@
       }
       window.state.draggingStack = null; window.dragData = null; window.renderAll(); window.fb_syncMyState();
     });
-
-    window.takeFromWarehouse = function(itemId) {
-        if (window.state.warehouseItems[itemId] > 0) {
-            window.state.warehouseItems[itemId]--;
-            const wrapper = document.getElementById('board-wrapper');
-            const br = document.getElementById('board-area').getBoundingClientRect();
-            const wrapperRect = wrapper.getBoundingClientRect();
-            const cx = (wrapperRect.left + wrapper.clientWidth / 2 - br.left) / window.state.zoom + (Math.random()-0.5)*50;
-            const cy = (wrapperRect.top + wrapper.clientHeight / 2 - br.top) / window.state.zoom + (Math.random()-0.5)*50;
-
-            window.state.stacks.push({ id: `s${window.nextStackId++}`, x: cx, y: cy, cards: [itemId], crafting: null });
-            window.renderAll();
-        }
-    };
 
     window.renderAll = function() {
       document.getElementById('score').innerText = window.state.money;
@@ -1653,7 +1637,6 @@
       if (window.state.draggingStack && !window.state.viewingOpponent) html += window.renderStackDOM(window.state.draggingStack, true, false, 999);
       document.getElementById('board-area').innerHTML = html;
 
-      // 퀘스트 UI 업데이트
       if (window.state.activeQuest) {
           document.getElementById('active-quest-box').classList.remove('hidden');
           document.getElementById('active-quest-box').classList.add('flex');
@@ -1664,7 +1647,6 @@
           document.getElementById('active-quest-box').classList.remove('flex');
       }
 
-      // 창고 UI 업데이트
       let hasWarehouse = window.state.tech.warehouse && window.countItemOnBoard('warehouse_building') > 0;
       if (hasWarehouse) {
           document.getElementById('warehouse-panel').classList.remove('hidden');
