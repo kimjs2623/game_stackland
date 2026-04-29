@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>스카이 타이쿤: 유니버스</title>
+  <title>스카이 타이쿤: 산업 혁명</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <style>
@@ -28,6 +28,12 @@
     .animate-float { animation: float 6s ease-in-out infinite; }
     .delay-1000 { animation-delay: 1s; }
     .delay-2000 { animation-delay: 2s; }
+
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(-40px) scale(1.1); opacity: 0; }
+    }
+    .animate-float-up { animation: floatUp 1.2s ease-out forwards; pointer-events: none; }
 
     body { user-select: none; -webkit-user-drag: none; font-family: 'Pretendard', sans-serif; overflow: hidden; touch-action: none; }
     #board-wrapper { touch-action: none; cursor: grab; }
@@ -55,20 +61,14 @@
     .price-up { color: #10b981; } 
     .price-down { color: #ef4444; } 
     .price-neutral { color: #64748b; } 
-
-    #chat-container { transition: height 0.3s ease-in-out; }
-    .chat-open { height: 320px !important; }
-    .chat-closed { height: 40px !important; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-sky-100 via-blue-50 to-indigo-100 h-screen text-slate-800 relative">
 
-  <!-- 배경 구름 -->
   <i class="ph-fill ph-cloud absolute -top-10 -left-10 text-white/60 text-[250px] pointer-events-none animate-float"></i>
   <i class="ph-fill ph-cloud absolute top-40 right-10 text-white/50 text-[150px] pointer-events-none animate-float delay-1000"></i>
   <i class="ph-fill ph-cloud absolute bottom-0 -right-20 text-white/70 text-[350px] pointer-events-none animate-float delay-2000"></i>
 
-  <!-- 1. 메인 메뉴 -->
   <div id="screen-menu" class="absolute inset-0 flex flex-col items-center justify-center z-50 transition-opacity duration-500">
     <div class="bg-white/90 p-10 md:p-14 rounded-[3rem] backdrop-blur-xl border border-white shadow-[0_20px_60px_rgba(0,0,0,0.05)] text-center flex flex-col items-center max-w-3xl w-full mx-4 relative overflow-hidden">
       <h1 class="text-5xl md:text-7xl font-black mb-4 tracking-tighter text-sky-600 drop-shadow-sm">스카이 타이쿤</h1>
@@ -81,7 +81,7 @@
            <label class="text-xs font-black text-sky-600 uppercase tracking-wider text-center">싱글 플레이 설정</label>
            <div class="flex items-center justify-center gap-3">
              <span class="text-sm font-bold text-slate-700">목표 턴 수:</span>
-             <select id="single-max-turns-input" class="w-24 border-2 border-sky-300 rounded-lg px-2 py-1 font-black text-sky-700 focus:border-sky-500 outline-none text-center bg-white cursor-pointer">
+             <select id="single-max-turns-input" class="w-32 border-2 border-sky-300 rounded-lg px-2 py-1 font-black text-sky-700 focus:border-sky-500 outline-none text-center bg-white cursor-pointer">
                 <option value="30">30 턴</option>
                 <option value="50" selected>50 턴 (표준)</option>
                 <option value="80">80 턴</option>
@@ -100,36 +100,56 @@
         </button>
       </div>
 
-      <!-- 최근 업데이트 내역 -->
-      <div class="mt-8 w-full max-w-2xl bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-left max-h-48 overflow-y-auto custom-scroll relative">
+      <button onclick="window.showLeaderboardModal(document.getElementById('single-max-turns-input').value)" class="mt-6 px-6 py-2.5 bg-white text-slate-600 font-black rounded-full text-sm hover:bg-amber-50 hover:text-amber-600 transition-all shadow-sm border border-slate-200 flex items-center gap-2 hover:border-amber-300 group">
+         <i class="ph-bold ph-trophy text-amber-500 text-lg group-hover:scale-110 transition-transform"></i> 명예의 전당 보기
+      </button>
+
+      <div class="mt-6 w-full max-w-2xl bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-left max-h-40 overflow-y-auto custom-scroll relative">
         <div class="sticky top-0 bg-white pb-2 border-b border-slate-100 mb-3 z-10 flex items-center justify-between">
             <h3 class="text-sm font-black text-slate-800 flex items-center gap-1"><i class="ph-bold ph-megaphone text-amber-500 text-lg"></i> 최근 업데이트 노트</h3>
             <span class="text-[10px] text-slate-400 font-bold">스크롤하여 확인</span>
         </div>
         <ul class="text-[11px] text-slate-600 space-y-3 font-bold">
           <li>
-              <span class="text-white bg-indigo-500 px-1.5 py-0.5 rounded mr-1">v1.2</span><span class="text-indigo-700 font-black">편의성 및 밸런스 조정 패치</span><br>
+              <span class="text-white bg-indigo-500 px-1.5 py-0.5 rounded mr-1">v1.4</span><span class="text-indigo-700 font-black">Industrial Revolution 대규모 패치</span><br>
               <div class="pl-2 border-l-2 border-indigo-100 mt-1 space-y-1">
-                 - <b>보드 대확장 및 줌 기능:</b> 보드가 2400x1600 크기로 확장되었습니다. 좌측 하단 버튼으로 줌인/아웃하며 편하게 플레이하세요!<br>
-                 - <b>주민 투자 로직:</b> 이제 '주민 영입' 시 일회용 건축 자산인 [오두막]이 재료로 소모됩니다. 신중하게 투자하세요.<br>
-                 - <b>목표 턴 수 고정:</b> 자유 입력 방식을 폐지하고 30, 50, 80, 100턴 선택지로 표준화했습니다.
+                 - <b>기술 연구 (Tech Tree):</b> '연구 데이터'를 소모하여 2티어 특산물, 창고, 강철 업그레이드를 해금하세요!<br>
+                 - <b>강철 인프라:</b> 건물 위에 강철을 드롭하면 영구 강화되어 <b>(기본 * 숙련도배수) + 기본</b>의 엄청난 합연산 생산량을 자랑합니다.<br>
+                 - <b>퀘스트 시스템:</b> 매 5턴마다 상인들의 의뢰(Drafting)가 들어옵니다. 납품하고 막대한 배수의 골드를 획득하세요.<br>
+                 - <b>숙련도 XP 개편:</b> 이제 제작(0.2)뿐만 아니라 물건을 시장에 매각할 때 대량의 XP(가공 1, 1티어 3, 2티어 10)를 얻습니다.
               </div>
           </li>
           <li>
-              <span class="text-white bg-slate-400 px-1.5 py-0.5 rounded mr-1">v1.1</span><span class="text-slate-600 font-black">50턴 대격변 & 숙련도 전문화</span><br>
+              <span class="text-white bg-slate-400 px-1.5 py-0.5 rounded mr-1">v1.3</span><span class="text-slate-600 font-black">싱글 리더보드 & 타격감 최적화</span><br>
               <div class="pl-2 border-l-2 border-slate-200 mt-1 space-y-1">
-                 - <b>농사 탈곡 개편:</b> 탈곡 레시피가 [농장+주민+밀]로 변경되며 씨앗이 3~4개씩 드랍됩니다! (바위 소모 X)<br>
-                 - <b>전문가의 특권:</b> 분야별 숙련도 <span class="text-amber-500">Lv.3 (해당 건물 생산량 2배)</span> 및 <span class="text-purple-500">Lv.4 (2티어 특산물 1턴 단축)</span> 특성 부여!<br>
-                 - <b>경제 스케일업:</b> 기초 가공품은 하위재료의 1.8배, 1티어 2배, 2티어 2.8배로 시장 가치가 대폭 상향되었습니다.
+                 - 싱글 플레이 종료 시 턴 수 별 글로벌 리더보드 점수 등록 가능<br>
+                 - 3레벨 이상 생산 시 카드 위 플로팅 텍스트 팝업 추가
               </div>
           </li>
         </ul>
       </div>
-
     </div>
   </div>
 
-  <!-- 멀티플레이 로비 모달 -->
+  <div id="modal-leaderboard" class="fixed inset-0 z-[400] hidden flex-col items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 opacity-0 transition-opacity" onclick="window.closeLeaderboard()">
+    <div class="bg-white border border-slate-200 w-full max-w-lg rounded-[2rem] shadow-2xl flex flex-col transform scale-95 transition-transform overflow-hidden" onclick="event.stopPropagation()">
+      <div class="p-5 pb-3 border-b border-slate-100 shrink-0 bg-amber-50 flex justify-between items-center">
+        <h2 class="text-xl font-black text-amber-600 flex items-center gap-2"><i class="ph-bold ph-trophy"></i> 명예의 전당</h2>
+        <button onclick="window.closeLeaderboard()" class="text-slate-400 hover:text-slate-700"><i class="ph-bold ph-x text-2xl"></i></button>
+      </div>
+      <div class="p-4 bg-white flex justify-center gap-2 border-b border-slate-100">
+         <select id="leaderboard-turn-select" onchange="window.fetchLeaderboard(this.value)" class="border-2 border-amber-200 rounded-xl px-4 py-2 font-black text-amber-700 focus:border-amber-400 outline-none text-center bg-white cursor-pointer w-full max-w-[200px]">
+            <option value="30">30 턴 랭킹</option>
+            <option value="50">50 턴 랭킹</option>
+            <option value="80">80 턴 랭킹</option>
+            <option value="100">100 턴 랭킹</option>
+         </select>
+      </div>
+      <div id="leaderboard-list" class="flex-1 custom-scroll p-4 space-y-2 bg-slate-50 overflow-y-auto min-h-[300px] max-h-[50vh]">
+      </div>
+    </div>
+  </div>
+
   <div id="modal-lobby" class="fixed inset-0 z-[200] hidden flex-col items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 opacity-0 transition-opacity" onclick="window.hideLobby()">
     <div class="bg-white border border-slate-200 w-full max-w-md rounded-[2rem] shadow-2xl flex flex-col transform scale-95 transition-transform overflow-hidden p-8" onclick="event.stopPropagation()">
       <h2 class="text-2xl font-black text-indigo-600 mb-6 text-center">멀티플레이 접속</h2>
@@ -139,10 +159,10 @@
           <div class="flex items-center gap-3">
              <span class="text-sm font-bold text-slate-700 w-24">최대 턴 수:</span>
              <select id="room-max-turns-input" class="flex-1 border-2 border-indigo-200 rounded-lg px-3 py-1.5 font-black text-indigo-700 focus:border-indigo-400 outline-none text-center bg-white cursor-pointer">
-                <option value="30">30 턴 (빠름)</option>
-                <option value="50" selected>50 턴 (표준)</option>
-                <option value="80">80 턴 (긴 게임)</option>
-                <option value="100">100 턴 (하드코어)</option>
+                <option value="30">30 턴</option>
+                <option value="50" selected>50 턴</option>
+                <option value="80">80 턴</option>
+                <option value="100">100 턴</option>
              </select>
           </div>
         </div>
@@ -159,7 +179,6 @@
     </div>
   </div>
 
-  <!-- 대기실 화면 -->
   <div id="screen-waiting" class="absolute inset-0 flex flex-col items-center justify-center z-40 hidden opacity-0 transition-opacity duration-500">
     <div class="bg-white/90 p-12 rounded-[3rem] backdrop-blur-xl border border-white shadow-2xl text-center max-w-lg w-full">
        <h2 class="text-4xl font-black text-indigo-600 mb-2">대기실</h2>
@@ -177,19 +196,43 @@
     </div>
   </div>
 
-  <!-- 특산물 선택 모달 -->
   <div id="modal-specialty" class="fixed inset-0 z-[300] hidden flex-col items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 opacity-0 transition-opacity">
     <div class="w-full max-w-4xl flex flex-col transform scale-95 transition-transform p-4">
       <div class="text-center mb-8">
         <h2 class="text-4xl md:text-5xl font-black text-amber-400 mb-3 drop-shadow-md">특산물 픽 (Pick) <span class="text-2xl text-amber-200">(Tier 1)</span></h2>
         <p class="text-white font-bold text-lg">이번 게임에서 주력으로 생산할 기초 특산물을 선택하세요!</p>
-        <p class="text-sky-300 text-sm mt-1">이후 '연구소'를 지어 연구 데이터를 모으면 강력한 2티어 특산물로 업그레이드할 수 있습니다.</p>
+        <p class="text-sky-300 text-sm mt-1">이후 기술 연구를 통해 강력한 2티어 특산물로 업그레이드할 수 있습니다.</p>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="specialty-options"></div>
     </div>
   </div>
 
-  <!-- 게임 화면 -->
+  <div id="modal-tech" class="fixed inset-0 z-[300] hidden flex-col items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 opacity-0 transition-opacity" onclick="window.toggleTechModal()">
+    <div class="bg-white border border-slate-200 w-full max-w-4xl rounded-[2rem] shadow-2xl flex flex-col transform scale-95 transition-transform overflow-hidden" onclick="event.stopPropagation()">
+      <div class="p-5 pb-3 border-b border-slate-100 shrink-0 bg-indigo-50 flex justify-between items-center">
+        <h2 class="text-xl font-black text-indigo-700 flex items-center gap-2"><i class="ph-bold ph-lightbulb"></i> 아카데미 기술 연구</h2>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 bg-white px-3 py-1 rounded-xl border border-indigo-200 shadow-sm text-sm font-black text-indigo-600">
+                보유 연구 데이터: <span id="tech-available-rd" class="text-xl">0</span><i class="ph-fill ph-flask"></i>
+            </div>
+            <button onclick="window.toggleTechModal()" class="text-slate-400 hover:text-slate-700"><i class="ph-bold ph-x text-2xl"></i></button>
+        </div>
+      </div>
+      <div class="p-6 bg-white grid grid-cols-1 md:grid-cols-3 gap-6" id="tech-options">
+         </div>
+    </div>
+  </div>
+
+  <div id="modal-quest" class="fixed inset-0 z-[350] hidden flex-col items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 opacity-0 transition-opacity">
+    <div class="w-full max-w-4xl flex flex-col transform scale-95 transition-transform p-4">
+      <div class="text-center mb-8">
+        <h2 class="text-4xl md:text-5xl font-black text-amber-400 mb-3 drop-shadow-md"><i class="ph-fill ph-envelope-open"></i> 왕실의 긴급 의뢰</h2>
+        <p class="text-white font-bold text-lg">시장의 수요에 맞춘 3가지 의뢰가 도착했습니다. 하나를 수락하세요!</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="quest-options"></div>
+    </div>
+  </div>
+
   <div id="screen-game" class="absolute inset-0 flex flex-col p-4 md:p-6 z-10 hidden opacity-0 transition-opacity duration-500 pointer-events-none">
     
     <div class="flex items-center justify-between gap-4 bg-white/80 p-3 rounded-[2rem] border border-white shadow-md backdrop-blur-xl mb-4 shrink-0 relative z-20 pointer-events-auto">
@@ -206,7 +249,7 @@
 
       <div class="flex flex-col items-center flex-1">
         <div class="text-[11px] font-black text-sky-600 uppercase mb-2 bg-sky-100 px-4 py-1 rounded-full border border-sky-200 shadow-sm flex items-center gap-1" id="pool-guide">
-          <i class="ph-bold ph-hand-grabbing"></i> 자원을 하나 가져가면 턴이 종료됩니다
+          <i class="ph-bold ph-hand-grabbing"></i> 자원을 가져가면 1턴이 소모됩니다
         </div>
         <div class="flex items-center gap-2">
           <div id="ui-shared-pool" class="flex gap-2"></div>
@@ -217,16 +260,16 @@
       </div>
 
       <div class="flex gap-2 w-1/3 justify-end items-center">
-        <div id="room-info" class="hidden flex-col items-end mr-2 text-right">
-          <span class="text-[10px] font-black text-indigo-400 uppercase bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">Multiplayer</span>
-          <span class="text-xs font-black text-slate-600 mt-1">방: <span id="display-room-code" class="text-indigo-600"></span></span>
+        <div id="active-quest-box" class="hidden flex-col items-end mr-4 text-right bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 shadow-sm">
+           <span class="text-[9px] font-black text-amber-500 uppercase">활성 의뢰 <i class="ph-bold ph-clock"></i> <span id="quest-timer"></span></span>
+           <div class="flex items-center gap-2">
+               <span id="quest-req-text" class="text-xs font-black text-slate-800"></span>
+               <button onclick="window.completeQuest()" class="ml-1 bg-amber-500 text-white text-[10px] font-black px-2 py-1 rounded shadow-sm hover:bg-amber-400 transition-colors">납품</button>
+           </div>
         </div>
-        <button id="btn-trade" onclick="window.toggleTradeModal()" class="hidden py-2 px-3 bg-purple-50 text-purple-700 rounded-xl font-black text-xs hover:bg-purple-100 transition-colors shadow-sm border border-purple-200 hover:scale-105 flex-col items-center justify-center relative">
-          <i class="ph-bold ph-handshake text-lg mb-0.5"></i> 거래소
-          <span id="trade-notif-badge" class="absolute -top-1 -right-1 bg-red-500 text-white w-3 h-3 rounded-full hidden animate-ping"></span>
-        </button>
-        <button onclick="window.toggleNewsModal()" class="py-2 px-3 bg-amber-50 text-amber-600 rounded-xl font-black text-xs hover:bg-amber-100 transition-colors shadow-sm border border-amber-200 hover:scale-105 flex flex-col items-center justify-center">
-          <i class="ph-bold ph-broadcast text-lg mb-0.5"></i> 뉴스
+
+        <button onclick="window.toggleTechModal()" class="py-2 px-3 bg-indigo-50 text-indigo-700 rounded-xl font-black text-xs hover:bg-indigo-200 transition-colors shadow-sm border border-indigo-200 hover:scale-105 flex flex-col items-center justify-center">
+          <i class="ph-bold ph-lightbulb text-lg mb-0.5"></i> 기술 연구
         </button>
         <button onclick="window.toggleRecipeModal()" class="py-2 px-3 bg-sky-100 text-sky-700 rounded-xl font-black text-xs hover:bg-sky-200 transition-colors shadow-sm border border-sky-200 hover:scale-105 flex flex-col items-center justify-center">
           <i class="ph-bold ph-book-open text-lg mb-0.5"></i> 제작서
@@ -234,32 +277,25 @@
       </div>
     </div>
 
-    <!-- 플레이 영역 -->
     <div class="flex-1 flex gap-4 overflow-hidden pointer-events-auto h-full relative">
       
-      <!-- 보드 래퍼 (줌/스크롤 적용) -->
       <div class="flex-1 relative bg-white/50 rounded-[3rem] border-2 border-white shadow-xl backdrop-blur-md overflow-hidden flex flex-col" id="board-container">
         
         <div id="board-wrapper" class="w-full h-full overflow-auto custom-scroll relative bg-slate-50/50">
           <div id="board-area" class="absolute top-0 left-0 w-[2400px] h-[1600px]" style="transform-origin: top left; transform: scale(1.0);">
-             <!-- Cards go here -->
-          </div>
+             </div>
         </div>
         
-        <!-- [신규] 줌 컨트롤러 -->
         <div class="absolute bottom-6 left-6 flex items-center gap-2 bg-white/90 p-2 rounded-2xl shadow-lg border border-slate-200 z-[60] backdrop-blur-md">
             <button onclick="window.setZoom(-0.1)" class="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-sky-100 hover:text-sky-600 rounded-xl font-bold text-slate-600 transition-colors"><i class="ph-bold ph-minus"></i></button>
             <span id="zoom-level-text" class="text-xs font-black text-slate-700 w-10 text-center">100%</span>
             <button onclick="window.setZoom(0.1)" class="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-sky-100 hover:text-sky-600 rounded-xl font-bold text-slate-600 transition-colors"><i class="ph-bold ph-plus"></i></button>
         </div>
 
-        <div id="opponent-overlay" class="absolute inset-0 bg-indigo-900/10 backdrop-blur-[2px] hidden items-end justify-center pb-12 z-[50]">
-           <button onclick="window.changeViewPlayer('me')" class="px-8 py-4 bg-indigo-600 text-white font-black text-lg rounded-full shadow-2xl hover:scale-105 transition-all flex items-center gap-2 border-4 border-indigo-400 animate-bounce">
-             <i class="ph-bold ph-arrow-u-up-left text-2xl"></i> 내 영지로 돌아가기
-           </button>
-           <div class="absolute top-6 right-6 bg-indigo-100 px-4 py-2 rounded-xl border-2 border-indigo-300 shadow-lg">
-             <span class="text-xs font-black text-indigo-800">이 영지의 수익: <span id="overlay-opp-score" class="text-indigo-600 text-lg ml-1">0</span> G</span>
-           </div>
+        <div id="warehouse-panel" class="absolute top-6 left-6 bg-white/90 rounded-2xl border-2 border-stone-200 shadow-xl backdrop-blur-md p-4 w-64 z-[60] hidden flex-col">
+            <h3 class="font-black text-slate-800 text-xs mb-2 flex items-center gap-1"><i class="ph-fill ph-package text-stone-600 text-lg"></i> 대형 창고 <span class="text-[9px] font-normal text-slate-500">(클릭하여 꺼내기)</span></h3>
+            <div id="warehouse-items-container" class="flex flex-wrap gap-2 overflow-y-auto custom-scroll max-h-[250px] p-1">
+                </div>
         </div>
         
         <div id="market-zone" class="absolute bottom-6 right-6 w-36 h-36 bg-amber-50/90 border-4 border-dashed border-amber-300 rounded-[2rem] flex flex-col items-center justify-center transition-all z-[60] shadow-sm backdrop-blur-sm">
@@ -269,16 +305,10 @@
       </div>
 
       <div class="w-72 bg-white/70 rounded-[3rem] border border-white shadow-xl backdrop-blur-xl p-4 flex flex-col h-full relative z-20">
-        <div id="opponent-panel" class="mb-3 shrink-0 hidden flex-col gap-1">
-          <label class="text-[10px] font-black text-indigo-600 ml-1"><i class="ph-bold ph-binoculars"></i> 영지 정찰</label>
-          <select id="view-player-select" onchange="window.changeViewPlayer(this.value)" class="w-full py-2 px-3 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl font-black text-xs outline-none cursor-pointer">
-          </select>
-        </div>
-
         <div class="mb-3 bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm shrink-0">
           <div class="text-[10px] font-black text-slate-600 mb-1.5 px-1 flex justify-between items-center">
             <span class="flex items-center gap-1"><i class="ph-fill ph-medal text-amber-500"></i> 내 숙련도</span>
-            <span class="text-[8px] text-slate-400">Lv당 +15% 마진</span>
+            <span class="text-[8px] text-slate-400">Lv별 보너스 적용</span>
           </div>
           <div id="prof-list" class="flex justify-between gap-1 px-1"></div>
         </div>
@@ -301,34 +331,6 @@
         <div id="market-prices" class="flex-1 custom-scroll space-y-1.5 overflow-y-auto pr-1 pb-2 min-h-0"></div>
       </div>
     </div>
-    
-    <div id="chat-container" class="fixed bottom-4 left-4 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden z-[150] chat-closed hidden pointer-events-auto">
-       <div class="bg-indigo-500 text-white p-2 px-4 font-black cursor-pointer flex justify-between items-center hover:bg-indigo-600 transition-colors" onclick="window.toggleChat()">
-          <span class="flex items-center gap-2"><i class="ph-bold ph-chat-circle-dots text-lg"></i> 라운지 채팅 <span id="chat-unread" class="bg-red-500 text-white rounded-full px-2 py-0.5 text-[10px] hidden">New</span></span>
-          <i class="ph-bold ph-caret-up" id="chat-icon"></i>
-       </div>
-       <div class="flex items-center gap-2 p-1.5 bg-indigo-50 border-b border-indigo-100 shrink-0 px-3">
-          <span class="text-[10px] font-black text-indigo-400">To:</span>
-          <select id="chat-target-select" class="text-xs bg-transparent outline-none font-bold text-indigo-700 flex-1 cursor-pointer">
-             <option value="all">전체에게</option>
-          </select>
-       </div>
-       <div id="chat-messages" class="flex-1 overflow-y-auto p-3 space-y-2 bg-slate-50 text-xs custom-scroll"></div>
-       <div class="p-2 bg-white border-t border-slate-100 flex gap-2 shrink-0">
-          <input type="text" id="chat-input" class="flex-1 border rounded-lg px-2 py-1 outline-none text-xs focus:border-indigo-400" onkeypress="if(event.key==='Enter') window.sendChat()" placeholder="메시지 입력...">
-          <button onclick="window.sendChat()" class="bg-indigo-500 text-white px-3 py-1 rounded-lg font-bold text-xs hover:bg-indigo-400">전송</button>
-       </div>
-    </div>
-  </div>
-
-  <div id="modal-trade" class="fixed inset-0 z-[300] hidden flex-col items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 opacity-0 transition-opacity" onclick="window.toggleTradeModal()">
-    <div class="bg-white border border-slate-200 w-full max-w-4xl rounded-[2rem] shadow-2xl flex flex-col transform scale-95 transition-transform overflow-hidden" style="max-height: 90vh;" onclick="event.stopPropagation()">
-      <div class="p-5 pb-3 border-b border-slate-100 shrink-0 bg-purple-50 flex justify-between items-center">
-        <h2 class="text-xl font-black text-purple-700 flex items-center gap-2"><i class="ph-bold ph-handshake"></i> 플레이어 간 거래</h2>
-        <button onclick="window.toggleTradeModal()" class="text-slate-400 hover:text-slate-700"><i class="ph-bold ph-x text-2xl"></i></button>
-      </div>
-      <div id="trade-dynamic-content" class="flex flex-col md:flex-row flex-1 overflow-hidden bg-white"></div>
-    </div>
   </div>
 
   <div id="splash-news" class="fixed inset-0 z-[400] pointer-events-none flex items-center justify-center opacity-0 transition-opacity duration-500 hidden">
@@ -341,22 +343,27 @@
 
   <div id="screen-result" class="absolute inset-0 bg-white/95 z-50 hidden opacity-0 flex-col items-center justify-center p-8 backdrop-blur-2xl transition-opacity duration-1000">
     <h2 class="text-6xl md:text-7xl font-black text-sky-600 mb-6 drop-shadow-md">시장 마감!</h2>
-    <div class="bg-amber-50 p-16 rounded-[4rem] shadow-2xl border-4 border-amber-200 text-center mb-10 w-full max-w-2xl">
+    <div class="bg-amber-50 p-10 md:p-16 rounded-[4rem] shadow-2xl border-4 border-amber-200 text-center w-full max-w-2xl">
        <div id="result-text" class="text-amber-700 text-xl font-black mb-4 bg-amber-200 px-6 py-2 rounded-full inline-block">내 최종 수익</div>
-       <div class="flex items-center justify-center gap-4 mt-4">
-         <div id="result-score" class="text-9xl font-black text-slate-800">0</div><i class="ph-fill ph-coin text-7xl text-amber-400"></i>
+       <div class="flex items-center justify-center gap-4 mt-4 mb-4">
+         <div id="result-score" class="text-8xl md:text-9xl font-black text-slate-800">0</div><i class="ph-fill ph-coin text-6xl md:text-7xl text-amber-400"></i>
+       </div>
+       
+       <div id="register-score-section" class="flex flex-col items-center gap-3 mt-8 border-t-2 border-amber-200/50 pt-6 hidden">
+           <p class="text-sm font-bold text-amber-700">명예의 전당에 점수를 등록하시겠습니까?</p>
+           <div class="flex gap-2 w-full max-w-sm">
+               <input type="text" id="leaderboard-name-input" placeholder="플레이어 닉네임" class="flex-1 border-2 border-amber-300 rounded-xl px-4 py-3 font-black text-slate-700 focus:border-amber-500 outline-none text-center">
+               <button onclick="window.registerScore()" class="px-6 py-3 bg-amber-500 text-white font-black rounded-xl hover:bg-amber-400 shadow-md transition-colors whitespace-nowrap">등록하기</button>
+           </div>
+       </div>
+       <div id="register-success-section" class="hidden mt-8 border-t-2 border-amber-200/50 pt-6 text-amber-600 font-black">
+           점수가 성공적으로 등록되었습니다! 🏆
        </div>
     </div>
-    <button onclick="window.cleanupAndLeave()" class="px-16 py-5 bg-slate-800 text-white font-black rounded-full text-xl hover:bg-slate-700 transition-all shadow-xl border-4 border-slate-600">메인 메뉴로 돌아가기</button>
-  </div>
-
-  <div id="modal-news" class="fixed inset-0 z-[200] hidden flex-col items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 opacity-0 transition-opacity" onclick="window.toggleNewsModal()">
-    <div class="bg-white border border-slate-200 w-full max-w-xl rounded-[2rem] shadow-2xl flex flex-col transform scale-95 transition-transform overflow-hidden" style="max-height: 80vh;" onclick="event.stopPropagation()">
-      <div class="p-5 pb-3 border-b border-slate-100 shrink-0 bg-slate-50 flex justify-between items-center">
-        <h2 class="text-xl font-black text-amber-600 flex items-center gap-2"><i class="ph-bold ph-broadcast"></i> 시장 뉴스 히스토리</h2>
-        <button onclick="window.toggleNewsModal()" class="text-slate-400 hover:text-slate-700"><i class="ph-bold ph-x text-2xl"></i></button>
-      </div>
-      <div id="news-list" class="flex-1 custom-scroll p-5 space-y-3 bg-white overflow-y-auto"></div>
+    
+    <div class="flex gap-4 mt-8">
+        <button onclick="window.showLeaderboardModal()" class="px-10 py-4 bg-white text-slate-700 font-black rounded-full text-lg hover:bg-slate-50 transition-all shadow-lg border-2 border-slate-200">랭킹 확인</button>
+        <button onclick="window.cleanupAndLeave()" class="px-10 py-4 bg-slate-800 text-white font-black rounded-full text-lg hover:bg-slate-700 transition-all shadow-xl border-4 border-slate-600">메인 메뉴로 돌아가기</button>
     </div>
   </div>
 
@@ -380,7 +387,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, onSnapshot, arrayUnion, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, addDoc, onSnapshot, arrayUnion, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     let firebaseConfig;
     let isExternalMode = false;
@@ -435,12 +442,9 @@
         }
     };
     initAuth();
+    onAuthStateChanged(auth, (u) => { user = u; isFirebaseReady = true; });
 
-    onAuthStateChanged(auth, (u) => { 
-        user = u; 
-        isFirebaseReady = true;
-    });
-
+    // 데이터 정의
     const TILES = {
       wood: { name: '나무', category: 'woodcraft', cardClass: 'bg-emerald-100 text-emerald-800 border-emerald-400', textColor: 'text-emerald-700', icon: '<i class="ph-fill ph-tree-evergreen text-3xl"></i>', basePrice: 40, volatility: 1.0 },
       stone: { name: '바위', category: 'mining', cardClass: 'bg-stone-200 text-stone-800 border-stone-400', textColor: 'text-stone-700', icon: '<i class="ph-fill ph-mountains text-3xl"></i>', basePrice: 40, volatility: 0.8 },
@@ -463,11 +467,11 @@
       lumber_mill: { name: '벌목장', category: 'woodcraft', cardClass: 'bg-emerald-700 text-white border-emerald-900', textColor: 'text-emerald-700', icon: '<i class="ph-fill ph-tent text-3xl"></i>', basePrice: 0 },
       quarry: { name: '채석장', category: 'mining', cardClass: 'bg-stone-700 text-white border-stone-900', textColor: 'text-stone-700', icon: '<i class="ph-fill ph-hammer text-3xl"></i>', basePrice: 0 },
       farm: { name: '농장', category: 'farming', cardClass: 'bg-yellow-600 text-white border-yellow-800', textColor: 'text-yellow-700', icon: '<i class="ph-fill ph-barn text-3xl"></i>', basePrice: 0 },
-      // [수정됨] 오두막의 설명을 '건물'에서 '일회용 자산' 느낌으로 변경 (주민 생성 시 소모됨)
-      house: { name: '오두막', category: 'woodcraft', cardClass: 'bg-pink-400 text-white border-pink-600', textColor: 'text-pink-600', icon: '<i class="ph-fill ph-house text-3xl"></i>', basePrice: 0, type: '일회용 건축 자산' },
+      house: { name: '오두막', category: 'woodcraft', cardClass: 'bg-pink-400 text-white border-pink-600', textColor: 'text-pink-600', icon: '<i class="ph-fill ph-house text-3xl"></i>', basePrice: 0 },
       furnace: { name: '화로', category: 'cooking', cardClass: 'bg-orange-600 text-white border-orange-800', textColor: 'text-orange-700', icon: '<i class="ph-fill ph-campfire text-3xl"></i>', basePrice: 0 },
       well: { name: '우물', category: 'farming', cardClass: 'bg-blue-300 text-blue-900 border-blue-500', textColor: 'text-blue-800', icon: '<i class="ph-fill ph-drop text-3xl text-blue-600"></i>', basePrice: 0 },
-      
+      warehouse_building: { name: '대형 창고', category: 'general', cardClass: 'bg-stone-700 text-stone-100 border-stone-900', textColor: 'text-stone-300', icon: '<i class="ph-fill ph-package text-3xl"></i>', basePrice: 0 },
+
       mana_crystal: { name: '마나석', tier: 1, ingredients: ['water', 'stone', 'fire'], category: 'mining', cardClass: 'bg-indigo-200 text-indigo-900 border-indigo-500', textColor: 'text-indigo-800', icon: '<i class="ph-fill ph-sketch-logo text-3xl text-indigo-600"></i>', basePrice: 450, volatility: 2.0 },
       golden_apple: { name: '황금사과', tier: 1, ingredients: ['seed', 'wood', 'water'], category: 'farming', cardClass: 'bg-yellow-300 text-yellow-900 border-yellow-500', textColor: 'text-yellow-800', icon: '<i class="ph-fill ph-apple-logo text-3xl text-red-500"></i>', basePrice: 500, volatility: 1.5 },
       sky_cloth: { name: '천공의 천', tier: 1, ingredients: ['wheat', 'fire', 'water'], category: 'woodcraft', cardClass: 'bg-sky-100 text-sky-800 border-sky-400', textColor: 'text-sky-700', icon: '<i class="ph-fill ph-scroll text-3xl text-sky-500"></i>', basePrice: 600, volatility: 1.2 },
@@ -490,6 +494,11 @@
     ];
     const CAT_INFO = { farming: { icon: '<i class="ph-fill ph-plant text-lime-500"></i>', name: '농업' }, mining: { icon: '<i class="ph-fill ph-diamond text-stone-500"></i>', name: '채광' }, woodcraft: { icon: '<i class="ph-fill ph-axe text-emerald-500"></i>', name: '목공' }, cooking: { icon: '<i class="ph-fill ph-campfire text-orange-500"></i>', name: '요리' }, smithing: { icon: '<i class="ph-fill ph-hammer text-slate-500"></i>', name: '제련' } };
 
+    const PROCESSING_ITEMS = ['charcoal', 'iron', 'paper', 'bread', 'brick', 'steel'];
+    const TIER1_ITEMS = ['mana_crystal', 'golden_apple', 'sky_cloth', 'golem_core', 'fairy_bread', 'magic_book'];
+    const TIER2_ITEMS = ['elixir', 'star_fruit', 'magic_carpet', 'mecha_golem', 'ambrosia', 'ancient_scroll'];
+    const UPGRADABLE_BUILDINGS = ['lumber_mill', 'quarry', 'well', 'furnace', 'farm'];
+
     const RECIPES = [
       { id: 'c1', category: 'woodcraft', inputs: ['wood', 'fire'], results: ['charcoal'], turns: 1, desc: '목탄 굽기' },
       { id: 'r1', category: 'smithing', inputs: ['fire', 'stone'], results: ['iron'], turns: 1, desc: '철 제련' },
@@ -510,9 +519,8 @@
       { id: 'p_w1', category: 'farming', inputs: ['well', 'villager'], results: ['well', 'villager', 'water', 'water'], turns: 1, desc: '물 긷기' },
 
       { id: 'l1', category: 'general', inputs: ['stone', 'iron', 'wood'], results: ['laboratory'], turns: 3, desc: '연구소 건설' },
-      
-      // [수정됨] 주민 영입 시 오두막(house)이 재료로 소멸됨
       { id: 'r7', category: 'general', inputs: ['house', 'bread'], results: ['villager'], turns: 2, desc: '주민 영입 (오두막 소모)' },
+      { id: 'b_w1', category: 'general', inputs: ['brick', 'brick', 'brick', 'steel'], results: ['warehouse_building'], turns: 3, desc: '대형 창고 건설' },
       
       { id: 'p1', category: 'woodcraft', inputs: ['lumber_mill', 'villager'], results: ['lumber_mill', 'villager', 'wood'], turns: 1, desc: '벌목 작업' },
       { id: 'p2', category: 'mining', inputs: ['quarry', 'villager'], results: ['quarry', 'villager', 'stone'], turns: 1, desc: '채석 작업' },
@@ -559,10 +567,16 @@
       chat: [], isChatOpen: false, 
       activeTrade: null, localTradeOffer: { money: 0, items: [] }, lastTradeTime: 0,
       isGameOver: false, lastEventTitle: null,
-      zoom: 1.0 // [신규] 줌 레벨 상태
+      zoom: 1.0,
+      tech: { tier_2: false, steel_upgrade: false, warehouse: false },
+      warehouseItems: {},
+      activeQuest: null,
+      questTimer: 0
     };
     
     window.nextStackId = 1; window.unsubSnapshot = null; window.dragData = null;
+
+    const normalizeCard = (c) => c.replace('_upgraded', '');
 
     window.notify = function(msg, type = 'info') {
       const container = document.getElementById('notif-container');
@@ -573,6 +587,17 @@
       el.innerHTML = msg;
       container.appendChild(el);
       setTimeout(() => el.remove(), 2400);
+    };
+
+    window.showFloatingText = function(x, y, text, colorClass) {
+       const board = document.getElementById('board-area');
+       const el = document.createElement('div');
+       el.className = `absolute z-[1000] font-black text-[13px] bg-white/90 border border-slate-200 px-3 py-1.5 rounded-lg drop-shadow-md animate-float-up ${colorClass}`;
+       el.style.left = `${x}px`;
+       el.style.top = `${y}px`;
+       el.innerText = text;
+       board.appendChild(el);
+       setTimeout(() => el.remove(), 1200);
     };
 
     window.showScreen = function(id) {
@@ -587,7 +612,6 @@
             target.classList.remove('opacity-0'); target.classList.add('opacity-100'); 
             if (id === 'screen-game') {
                 target.classList.add('flex'); 
-                // 화면 띄울 때 중앙으로 스크롤 이동
                 setTimeout(() => {
                     const wrapper = document.getElementById('board-wrapper');
                     if (wrapper) {
@@ -600,11 +624,88 @@
       }
     };
 
-    // [신규] 줌 조절 함수
     window.setZoom = function(delta) {
         window.state.zoom = Math.max(0.4, Math.min(1.5, window.state.zoom + delta));
         document.getElementById('zoom-level-text').innerText = Math.round(window.state.zoom * 100) + '%';
         document.getElementById('board-area').style.transform = `scale(${window.state.zoom})`;
+    };
+
+    window.toggleTechModal = function() {
+        const m = document.getElementById('modal-tech');
+        const available = countItemOnBoard('research') + (window.state.warehouseItems['research'] || 0);
+        document.getElementById('tech-available-rd').innerText = available;
+
+        const techUI = document.getElementById('tech-options');
+        techUI.innerHTML = `
+            <div class="border-2 ${window.state.tech.tier_2 ? 'border-emerald-400 bg-emerald-50' : 'border-indigo-200 bg-slate-50'} rounded-2xl p-5 flex flex-col items-center text-center shadow-sm">
+                <i class="ph-fill ph-flask text-4xl ${window.state.tech.tier_2 ? 'text-emerald-500' : 'text-indigo-400'} mb-2"></i>
+                <h3 class="font-black text-lg text-slate-800 mb-1">2티어 특산물 해금</h3>
+                <p class="text-xs text-slate-600 font-bold mb-4 flex-1">더 강력한 상위 특산물을 제작할 권한을 획득합니다.</p>
+                ${window.state.tech.tier_2 
+                    ? `<span class="px-4 py-2 bg-emerald-100 text-emerald-700 font-black rounded-xl">연구 완료</span>` 
+                    : `<button onclick="window.unlockTech('tier_2', 2)" class="px-4 py-2 bg-indigo-500 text-white font-black rounded-xl hover:bg-indigo-400">데이터 2개 소모</button>`}
+            </div>
+            <div class="border-2 ${window.state.tech.steel_upgrade ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 bg-slate-50'} rounded-2xl p-5 flex flex-col items-center text-center shadow-sm">
+                <i class="ph-fill ph-hammer text-4xl ${window.state.tech.steel_upgrade ? 'text-emerald-500' : 'text-slate-500'} mb-2"></i>
+                <h3 class="font-black text-lg text-slate-800 mb-1">강철 인프라 강화</h3>
+                <p class="text-xs text-slate-600 font-bold mb-4 flex-1">건물에 '강철'을 드롭하여 기본 생산량을 합연산으로 영구 추가합니다.</p>
+                ${window.state.tech.steel_upgrade 
+                    ? `<span class="px-4 py-2 bg-emerald-100 text-emerald-700 font-black rounded-xl">연구 완료</span>` 
+                    : `<button onclick="window.unlockTech('steel_upgrade', 1)" class="px-4 py-2 bg-slate-700 text-white font-black rounded-xl hover:bg-slate-600">데이터 1개 소모</button>`}
+            </div>
+            <div class="border-2 ${window.state.tech.warehouse ? 'border-emerald-400 bg-emerald-50' : 'border-amber-200 bg-amber-50'} rounded-2xl p-5 flex flex-col items-center text-center shadow-sm">
+                <i class="ph-fill ph-package text-4xl ${window.state.tech.warehouse ? 'text-emerald-500' : 'text-amber-500'} mb-2"></i>
+                <h3 class="font-black text-lg text-slate-800 mb-1">창고 물류 시스템</h3>
+                <p class="text-xs text-slate-600 font-bold mb-4 flex-1">대형 창고 건설 시, 생산품이 보드에 남지 않고 창고로 자동 수집됩니다.</p>
+                ${window.state.tech.warehouse 
+                    ? `<span class="px-4 py-2 bg-emerald-100 text-emerald-700 font-black rounded-xl">연구 완료</span>` 
+                    : `<button onclick="window.unlockTech('warehouse', 1)" class="px-4 py-2 bg-amber-500 text-white font-black rounded-xl hover:bg-amber-400">데이터 1개 소모</button>`}
+            </div>
+        `;
+
+        if (m.classList.contains('hidden')) { m.classList.remove('hidden'); m.classList.add('flex'); setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10); }
+        else { m.classList.add('opacity-0'); m.children[0].classList.add('scale-95'); setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300); }
+    };
+
+    window.unlockTech = function(techId, cost) {
+        let total = (window.state.warehouseItems['research'] || 0) + countItemOnBoard('research');
+        if (total < cost) return window.notify("연구 데이터가 부족합니다.", "error");
+        
+        let needed = cost;
+        while(needed > 0 && window.state.warehouseItems['research'] > 0) {
+            window.state.warehouseItems['research']--;
+            needed--;
+        }
+        if (needed > 0) {
+            removeItemsFromBoard('research', needed);
+        }
+
+        window.state.tech[techId] = true;
+        window.notify("기술 연구가 완료되었습니다! 🧪", "success");
+        window.toggleTechModal();
+        window.renderAll();
+    };
+
+    window.countItemOnBoard = function(itemId) {
+        let count = 0;
+        window.state.stacks.forEach(s => {
+            s.cards.forEach(c => { if(normalizeCard(c) === itemId) count++; });
+        });
+        return count;
+    };
+
+    window.removeItemsFromBoard = function(itemId, amount) {
+        let remaining = amount;
+        for (let i = 0; i < window.state.stacks.length && remaining > 0; i++) {
+            let s = window.state.stacks[i];
+            for (let j = s.cards.length - 1; j >= 0 && remaining > 0; j--) {
+                if (normalizeCard(s.cards[j]) === itemId) {
+                    s.cards.splice(j, 1);
+                    remaining--;
+                }
+            }
+        }
+        window.state.stacks = window.state.stacks.filter(s => s.cards.length > 0);
     };
 
     window.toggleRecipeModal = function() {
@@ -632,7 +733,7 @@
 
     window.showTooltip = function(id, e) {
       if (window.state.draggingStack || window.state.viewingOpponent || window.state.isGameOver) return;
-      
+      id = normalizeCard(id);
       const rel = RECIPES.filter(r => (!r.isSpecialty || r.unlockId === window.state.unlockedSpecialty) && r.inputs.includes(id));
       if(rel.length === 0) return;
 
@@ -682,6 +783,86 @@
     window.hideLobby = function() {
       const m = document.getElementById('modal-lobby'); m.classList.add('opacity-0'); m.children[0].classList.add('scale-95');
       setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
+    };
+
+    window.showLeaderboardModal = function(turns) {
+        if (!turns) turns = document.getElementById('single-max-turns-input').value;
+        const m = document.getElementById('modal-leaderboard');
+        document.getElementById('leaderboard-turn-select').value = turns;
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+        setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10);
+        window.fetchLeaderboard(turns);
+    };
+
+    window.closeLeaderboard = function() {
+        const m = document.getElementById('modal-leaderboard');
+        m.classList.add('opacity-0'); m.children[0].classList.add('scale-95');
+        setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
+    };
+
+    window.fetchLeaderboard = async function(turns) {
+        if (!user) return;
+        const listEl = document.getElementById('leaderboard-list');
+        listEl.innerHTML = '<div class="text-center p-8 font-bold text-amber-500 animate-pulse">랭킹을 불러오는 중입니다...</div>';
+
+        try {
+            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
+            const snap = await getDocs(colRef);
+            let entries = [];
+            snap.forEach(doc => entries.push(doc.data()));
+
+            entries = entries.filter(e => e.turns == turns);
+            entries.sort((a, b) => b.score - a.score);
+            entries = entries.slice(0, 10);
+
+            if (entries.length === 0) {
+                listEl.innerHTML = '<div class="text-center p-8 text-slate-400 font-bold">아직 등록된 기록이 없습니다.<br>첫 번째 랭커가 되어보세요!</div>';
+                return;
+            }
+
+            listEl.innerHTML = entries.map((e, idx) => `
+                <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:border-amber-300 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <span class="font-black ${idx === 0 ? 'text-amber-500 text-2xl drop-shadow-sm' : idx === 1 ? 'text-slate-400 text-xl' : idx === 2 ? 'text-amber-700 text-xl' : 'text-slate-600 text-lg'} w-6 text-center">${idx + 1}</span>
+                        <span class="font-black text-slate-700">${e.name}</span>
+                    </div>
+                    <span class="font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg">${e.score} G</span>
+                </div>
+            `).join('');
+        } catch (e) {
+            console.error("Leaderboard Error:", e);
+            listEl.innerHTML = '<div class="text-center p-8 text-rose-500 font-bold">오류가 발생하여 랭킹을 불러올 수 없습니다.</div>';
+        }
+    };
+
+    window.registerScore = async function() {
+        if (!user) return window.notify("서버에 연결되지 않았습니다.", "error");
+        const nameInput = document.getElementById('leaderboard-name-input');
+        const name = nameInput.value.trim();
+        if (!name) return window.notify("닉네임을 입력해주세요!", "error");
+        
+        try {
+            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
+            await addDoc(colRef, {
+                name: name,
+                score: window.state.money,
+                turns: window.state.maxTurns,
+                time: Date.now()
+            });
+            
+            document.getElementById('register-score-section').classList.add('hidden');
+            document.getElementById('register-score-section').classList.remove('flex');
+            document.getElementById('register-success-section').classList.remove('hidden');
+            
+            setTimeout(() => {
+                window.showLeaderboardModal(window.state.maxTurns);
+            }, 1000);
+            
+        } catch (e) {
+            console.error("Save Score Error:", e);
+            window.notify("점수 등록에 실패했습니다.", "error");
+        }
     };
 
     window.createRoom = async function() {
@@ -735,7 +916,7 @@
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
       
       const initialStacks = [];
-      const cx = 1200; const cy = 800; // 중심점 갱신 (2400x1600)
+      const cx = 1200; const cy = 800; 
       const starts = ['wood', 'stone', 'seed', 'water', 'fire', 'villager'];
       starts.forEach((id, idx) => {
          const angle = (idx / starts.length) * Math.PI * 2; const r = 120;
@@ -797,6 +978,9 @@
       window.state.turnCount = 1; window.state.money = 0; window.state.stacks = []; window.nextStackId = 1; window.state.viewingOpponent = false; 
       window.state.isGameOver = false; window.state.lastEventTitle = null;
       window.state.prof = { farming: {lv:1,exp:0}, mining: {lv:1,exp:0}, woodcraft: {lv:1,exp:0}, cooking: {lv:1,exp:0}, smithing: {lv:1,exp:0} };
+      window.state.tech = { tier_2: false, steel_upgrade: false, warehouse: false };
+      window.state.warehouseItems = {};
+      window.state.activeQuest = null;
       
       window.initMarket();
       
@@ -861,6 +1045,64 @@
       window.evaluatePool(); window.renderAll(); window.fb_syncGlobalState();
     };
 
+    // [신규] 퀘스트 로직
+    window.showQuestDraft = function() {
+        const m = document.getElementById('modal-quest');
+        const c = document.getElementById('quest-options');
+        
+        let pool = ['bread', 'iron', 'paper', 'brick'];
+        if (window.state.unlockedSpecialty) pool.push(window.state.unlockedSpecialty);
+        
+        pool = pool.sort(() => 0.5 - Math.random()).slice(0, 3);
+        
+        c.innerHTML = pool.map(id => {
+            let mult = (id === window.state.unlockedSpecialty) ? 2.0 : 1.5;
+            let reqCount = Math.floor(Math.random() * 2) + 2; // 2~3
+            let rReward = Math.floor(TILES[id].basePrice * reqCount * mult);
+            return `
+            <div onclick="window.acceptQuest('${id}', ${reqCount}, ${rReward})" class="bg-slate-800/80 hover:bg-slate-700/90 border-2 border-slate-600 hover:border-amber-400 p-8 rounded-3xl cursor-pointer transition-all transform hover:-translate-y-2 flex flex-col items-center shadow-xl group">
+              <div class="text-white drop-shadow-sm mb-2">${TILES[id].icon.replace('text-3xl', 'text-5xl')}</div>
+              <h3 class="text-xl font-black text-white mb-1 group-hover:text-amber-200">${TILES[id].name} ${reqCount}개 납품</h3>
+              <p class="text-amber-400 text-lg font-black bg-amber-900/50 px-4 py-1 rounded-full mt-2">보상: ${rReward} G</p>
+            </div>`;
+        }).join('');
+
+        m.classList.remove('hidden'); m.classList.add('flex');
+        setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10);
+    };
+
+    window.acceptQuest = function(reqItem, reqCount, reward) {
+        window.state.activeQuest = { reqItem, reqCount, reward };
+        window.state.questTimer = 5; 
+        const m = document.getElementById('modal-quest');
+        m.classList.add('opacity-0'); m.children[0].classList.add('scale-95');
+        setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
+        window.notify("새로운 의뢰를 수락했습니다!", "action");
+        window.renderAll();
+    };
+
+    window.completeQuest = function() {
+        let q = window.state.activeQuest;
+        if (!q) return;
+        
+        let total = (window.state.warehouseItems[q.reqItem] || 0) + window.countItemOnBoard(q.reqItem);
+        if (total < q.reqCount) return window.notify(`${TILES[q.reqItem].name} ${q.reqCount}개가 필요합니다. (창고+보드)`, "error");
+
+        let needed = q.reqCount;
+        while(needed > 0 && window.state.warehouseItems[q.reqItem] > 0) {
+            window.state.warehouseItems[q.reqItem]--;
+            needed--;
+        }
+        if (needed > 0) {
+            window.removeItemsFromBoard(q.reqItem, needed);
+        }
+
+        window.state.money += q.reward;
+        window.state.activeQuest = null;
+        window.notify(`의뢰 완료! <span class="text-amber-500 font-black">+${q.reward} G</span>`, "success");
+        window.renderAll();
+    };
+
     window.handlePoolClick = function(poolIdx) {
       if (window.state.isGameOver) return;
       if (window.state.mode.startsWith('multi')) {
@@ -874,7 +1116,6 @@
       const br = document.getElementById('board-area').getBoundingClientRect();
       const wrapperRect = wrapper.getBoundingClientRect();
       
-      // 현재 보고 있는 뷰의 정중앙에 카드 드랍
       const screenCenterX = wrapperRect.left + wrapper.clientWidth / 2;
       const screenCenterY = wrapperRect.top + wrapper.clientHeight / 2;
       const cx = (screenCenterX - br.left) / window.state.zoom - 40;
@@ -887,51 +1128,111 @@
     };
 
     window.processTurnEnd = function() {
+      // 퀘스트 시간 감소
+      if (window.state.activeQuest) {
+          window.state.questTimer--;
+          if (window.state.questTimer <= 0) {
+              window.state.activeQuest = null;
+              window.notify("시간 초과로 의뢰가 취소되었습니다.", "error");
+          }
+      }
+
+      let hasWarehouse = window.state.tech.warehouse && window.countItemOnBoard('warehouse_building') > 0;
+
       window.state.stacks.forEach(stack => {
         if (stack.crafting) {
           stack.crafting.left--;
           if (stack.crafting.left <= 0) {
             const recipe = RECIPES.find(r => r.id === stack.crafting.recipeId);
-            
             let finalCards = [...recipe.results];
 
+            // 대풍년
             if (recipe.id === 'r8' && Math.random() < 0.5) {
                 finalCards.push('seed'); 
+                window.showFloatingText(stack.x + 10, stack.y - 30, "대풍년(씨앗+1)!", "text-lime-500");
             }
+
+            let isUpgraded = stack.cards.some(c => c.endsWith('_upgraded'));
+            let pureOutputs = [...recipe.results];
+            recipe.inputs.forEach(inp => {
+                let idx = pureOutputs.indexOf(inp);
+                if (idx !== -1) pureOutputs.splice(idx, 1);
+            });
             
             if (recipe.category && recipe.category !== 'general') {
                let p = window.state.prof[recipe.category];
                let oldLv = p.lv;
-               p.exp += 1;
-               p.lv = Math.min(5, Math.floor(p.exp / 3) + 1); 
+               p.exp += 0.2; // [신규] 제작 시 0.2 상승
+               p.lv = p.exp >= 50 ? 4 : (p.exp >= 20 ? 3 : (p.exp >= 10 ? 2 : 1));
 
                let isBuildingProd = recipe.inputs.includes('villager') && recipe.inputs.some(i => ['lumber_mill', 'quarry', 'farm', 'furnace', 'well'].includes(i));
                
+               let multiplier = 1;
                if (p.lv >= 3 && isBuildingProd) {
-                   let newItems = [...recipe.results];
-                   recipe.inputs.forEach(inp => {
-                       let idx = newItems.indexOf(inp);
-                       if(idx !== -1) newItems.splice(idx, 1);
-                   });
-                   finalCards.push(...newItems); 
-                   if(oldLv === p.lv) window.notify(`${CAT_INFO[recipe.category].name} 전문화(Lv.3): 생산량 2배!`, 'success');
+                   multiplier = 2;
+                   if(oldLv < 3) window.notify(`${CAT_INFO[recipe.category].name} 전문화(Lv.3): 생산량 2배!`, 'success');
+               }
+
+               // 순수 결과물 재계산
+               finalCards = [...recipe.results]; // 기본
+               // 배수에 맞게 추가
+               for(let i=1; i<multiplier; i++){
+                   finalCards.push(...pureOutputs);
+               }
+               // 강철 업그레이드 합연산 추가
+               if (isUpgraded && isBuildingProd) {
+                   finalCards.push(...pureOutputs);
+                   window.showFloatingText(stack.x + 10, stack.y - 60, "강철 인프라 +1!", "text-slate-600");
+               }
+
+               if (multiplier > 1 && recipe.id !== 'r8') {
+                   window.showFloatingText(stack.x + 10, stack.y - 30, "전문가 x2 생산!", "text-amber-500");
+               } else if (recipe.id !== 'r8' && !isUpgraded) {
+                   window.notify(`${recipe.desc} 완성! ✨`, "success");
                }
 
                if(p.lv > oldLv) {
                   window.notify(`${CAT_INFO[recipe.category].name} 레벨업 (Lv.${p.lv}) 🎉`, 'action');
-               } else if (!(p.lv >= 3 && isBuildingProd)) {
-                  window.notify(`${recipe.desc} 완성! ✨`, "success");
                }
             } else {
                window.notify(`${recipe.desc} 완성! ✨`, "success");
             }
             
-            stack.cards = finalCards;
+            // 건물 업그레이드명 복구
+            stack.cards.forEach(c => {
+                if (c.endsWith('_upgraded')) {
+                    let base = c.replace('_upgraded', '');
+                    let idx = finalCards.indexOf(base);
+                    if (idx !== -1) finalCards[idx] = c; 
+                }
+            });
+
+            // [신규] 창고 자동 수집
+            if (hasWarehouse) {
+                let toBoard = [];
+                finalCards.forEach(c => {
+                    let bc = normalizeCard(c);
+                    if (['villager', 'lumber_mill', 'quarry', 'farm', 'house', 'furnace', 'well', 'laboratory', 'warehouse_building'].includes(bc)) {
+                        toBoard.push(c);
+                    } else {
+                        window.state.warehouseItems[bc] = (window.state.warehouseItems[bc] || 0) + 1;
+                        window.showFloatingText(stack.x + 10, stack.y - 10, "창고 보관됨", "text-stone-500");
+                    }
+                });
+                stack.cards = toBoard;
+            } else {
+                stack.cards = finalCards;
+            }
+
             stack.crafting = null;
-            window.checkAndSetRecipe(stack);
+            if (stack.cards.length > 0) {
+                window.checkAndSetRecipe(stack);
+            }
           }
         }
       });
+      // Filter out empty stacks from warehouse collection
+      window.state.stacks = window.state.stacks.filter(s => s.cards.length > 0);
 
       let ev = null;
       if (window.state.turnCount % 5 === 0 && Math.random() < 0.4) {
@@ -942,6 +1243,11 @@
         
         window.state.newsHistory.unshift({ turn: window.state.turnCount + 1, msg: ev.msg, type: ev.type });
         window.showNewsSplash(ev.title, ev.msg, ev.type);
+      }
+
+      // 퀘스트 발생
+      if (window.state.turnCount % 5 === 0 && window.state.turnCount > 1) {
+          window.showQuestDraft();
       }
 
       let targetPrices = {};
@@ -985,9 +1291,13 @@
     window.checkAndSetRecipe = function(stack) {
       stack.crafting = null; 
       if (stack.cards.length < 2) return;
-      const currentSorted = [...stack.cards].sort().join(',');
+      const currentSorted = [...stack.cards].map(normalizeCard).sort().join(',');
       const matched = RECIPES.filter(r => !r.isSpecialty || r.unlockId === window.state.unlockedSpecialty).find(r => [...r.inputs].sort().join(',') === currentSorted);
       if (matched) { 
+          if (matched.tier === 2 && !window.state.tech.tier_2) {
+              window.notify("2차 특산물을 제작하려면 [기술 연구]에서 권한을 해금해야 합니다.", "error");
+              return;
+          }
           let turns = matched.turns;
           if (matched.tier === 2 && window.state.prof[matched.category] && window.state.prof[matched.category].lv >= 4) {
               turns = Math.max(1, turns - 1);
@@ -1017,6 +1327,12 @@
           else if(window.state.money < 15000) res.innerText = "성공한 사업가 💼";
           else res.innerText = "하늘 섬의 만수르 💎";
       }
+      
+      document.getElementById('register-score-section').classList.remove('hidden');
+      document.getElementById('register-score-section').classList.add('flex');
+      document.getElementById('register-success-section').classList.add('hidden');
+      document.getElementById('leaderboard-name-input').value = '';
+
       if(window.unsubSnapshot) window.unsubSnapshot();
       window.showScreen('screen-result');
     };
@@ -1064,7 +1380,7 @@
             const myData = data.playersData[window.state.myPlayerId];
             if (myData) {
                 window.state.money = myData.money;
-                window.state.stacks = myData.stacks.map(s => ({...s, id: s.id || `s${window.nextStackId++}`}));
+                window.state.stacks = myData.stacks.map(s => ({...s, id: s.id || `s${window.nextStackId++}`, x: s.xRatio * w, y: s.yRatio * h}));
                 if (data.activeTrade?.pA !== window.state.myPlayerId) { 
                     window.notify("거래 성사! 보드 중앙과 골드를 확인하세요 🎁", "success");
                     window.state.localTradeOffer = { money: 0, items: [] };
@@ -1132,8 +1448,8 @@
        let dropX = 1200 + (Math.random() - 0.5) * 100;
        let dropY = 800 + (Math.random() - 0.5) * 100;
        
-       tr.pBItems.forEach((item, idx) => newPAStacks.push({ id: `t_${Date.now()}_${idx}_b`, x: dropX, y: dropY, cards: [item], crafting: null }));
-       tr.pAItems.forEach((item, idx) => newPBStacks.push({ id: `t_${Date.now()}_${idx}_a`, x: dropX, y: dropY, cards: [item], crafting: null }));
+       tr.pBItems.forEach((item, idx) => newPAStacks.push({ id: `t_${Date.now()}_${idx}_b`, xRatio: 0.45 + Math.random()*0.1, yRatio: 0.45 + Math.random()*0.1, cards: [item], crafting: null }));
+       tr.pAItems.forEach((item, idx) => newPBStacks.push({ id: `t_${Date.now()}_${idx}_a`, xRatio: 0.45 + Math.random()*0.1, yRatio: 0.45 + Math.random()*0.1, cards: [item], crafting: null }));
 
        await updateDoc(roomRef, {
            [`playersData.${pA_id}.money`]: pA_money, [`playersData.${pA_id}.stacks`]: newPAStacks,
@@ -1146,7 +1462,8 @@
        if (window.state.myPlayerId === pA_id || window.state.myPlayerId === pB_id) {
            const myNewData = window.state.myPlayerId === pA_id ? {m: pA_money, s: newPAStacks} : {m: pB_money, s: newPBStacks};
            window.state.money = myNewData.m;
-           window.state.stacks = myNewData.s.map(s => ({...s, id: s.id}));
+           const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
+           window.state.stacks = myNewData.s.map(s => ({...s, id: s.id, x: s.xRatio * w, y: s.yRatio * h}));
            window.renderAll();
        }
     };
@@ -1230,8 +1547,22 @@
 
           let earned = 0, success = false, remains = [];
           window.state.draggingStack.cards.forEach(cardId => {
-            const m = window.state.market[cardId];
-            if (m && TILES[cardId].basePrice > 0) { earned += window.getFinalPrice(cardId); m.pendingSupply += 1; success = true; } 
+            let pureId = normalizeCard(cardId);
+            const m = window.state.market[pureId];
+            if (m && TILES[pureId].basePrice > 0) { 
+                earned += window.getFinalPrice(pureId); m.pendingSupply += 1; success = true; 
+                
+                // [신규] 매각 XP 로직
+                if(TILES[pureId].category && TILES[pureId].category !== 'general'){
+                    let p = window.state.prof[TILES[pureId].category];
+                    let oldLv = p.lv;
+                    if(PROCESSING_ITEMS.includes(pureId)) p.exp += 1;
+                    if(TIER1_ITEMS.includes(pureId)) p.exp += 3;
+                    if(TIER2_ITEMS.includes(pureId)) p.exp += 10;
+                    p.lv = p.exp >= 50 ? 4 : (p.exp >= 20 ? 3 : (p.exp >= 10 ? 2 : 1));
+                    if(p.lv > oldLv) window.notify(`${CAT_INFO[TILES[pureId].category].name} 레벨업 (Lv.${p.lv}) 🎉`, 'action');
+                }
+            } 
             else remains.push(cardId);
           });
           if (success) { window.state.money += earned; window.notify(`매각 예약됨! 턴 종료 시 반영됩니다. <span class="text-amber-500 font-black">+${earned} G</span>`, "action"); }
@@ -1249,6 +1580,18 @@
       }
 
       if (ts) {
+        // [신규] 강철 강화 로직
+        if (window.state.tech.steel_upgrade && window.state.draggingStack.cards.length === 1 && window.state.draggingStack.cards[0] === 'steel') {
+            let topCard = normalizeCard(ts.cards[ts.cards.length - 1]);
+            if (UPGRADABLE_BUILDINGS.includes(topCard) && !ts.cards[ts.cards.length - 1].endsWith('_upgraded')) {
+                ts.cards[ts.cards.length - 1] = topCard + '_upgraded';
+                window.notify("건물이 강철로 강화되었습니다! 🛠️", "success");
+                window.state.draggingStack = null;
+                window.renderAll();
+                return;
+            }
+        }
+
         if (window.state.draggingStack.crafting) {
           window.notify("제작 중인 덱은 다른 카드와 합칠 수 없습니다 ❌", "error");
           window.state.stacks.push({ ...window.state.draggingStack, id: `s${window.nextStackId++}` });
@@ -1266,6 +1609,20 @@
       }
       window.state.draggingStack = null; window.dragData = null; window.renderAll(); window.fb_syncMyState();
     });
+
+    window.takeFromWarehouse = function(itemId) {
+        if (window.state.warehouseItems[itemId] > 0) {
+            window.state.warehouseItems[itemId]--;
+            const wrapper = document.getElementById('board-wrapper');
+            const br = document.getElementById('board-area').getBoundingClientRect();
+            const wrapperRect = wrapper.getBoundingClientRect();
+            const cx = (wrapperRect.left + wrapper.clientWidth / 2 - br.left) / window.state.zoom + (Math.random()-0.5)*50;
+            const cy = (wrapperRect.top + wrapper.clientHeight / 2 - br.top) / window.state.zoom + (Math.random()-0.5)*50;
+
+            window.state.stacks.push({ id: `s${window.nextStackId++}`, x: cx, y: cy, cards: [itemId], crafting: null });
+            window.renderAll();
+        }
+    };
 
     window.renderAll = function() {
       document.getElementById('score').innerText = window.state.money;
@@ -1296,6 +1653,33 @@
       if (window.state.draggingStack && !window.state.viewingOpponent) html += window.renderStackDOM(window.state.draggingStack, true, false, 999);
       document.getElementById('board-area').innerHTML = html;
 
+      // 퀘스트 UI 업데이트
+      if (window.state.activeQuest) {
+          document.getElementById('active-quest-box').classList.remove('hidden');
+          document.getElementById('active-quest-box').classList.add('flex');
+          document.getElementById('quest-timer').innerText = `${window.state.questTimer}턴 남음`;
+          document.getElementById('quest-req-text').innerText = `${TILES[window.state.activeQuest.reqItem].name} ${window.state.activeQuest.reqCount}개`;
+      } else {
+          document.getElementById('active-quest-box').classList.add('hidden');
+          document.getElementById('active-quest-box').classList.remove('flex');
+      }
+
+      // 창고 UI 업데이트
+      let hasWarehouse = window.state.tech.warehouse && window.countItemOnBoard('warehouse_building') > 0;
+      if (hasWarehouse) {
+          document.getElementById('warehouse-panel').classList.remove('hidden');
+          document.getElementById('warehouse-panel').classList.add('flex');
+          let wHtml = Object.entries(window.state.warehouseItems).filter(([k, v]) => v > 0).map(([k, v]) => `
+             <div onclick="window.takeFromWarehouse('${k}')" class="px-2 py-1 bg-white border border-stone-200 rounded cursor-pointer hover:bg-stone-50 flex items-center gap-1 shadow-sm">
+                <span class="${TILES[k].textColor}">${TILES[k].icon.replace('text-3xl','text-sm')}</span> 
+                <span class="text-[10px] font-bold text-slate-700">${TILES[k].name} <span class="text-amber-600 font-black">x${v}</span></span>
+             </div>`).join('');
+          document.getElementById('warehouse-items-container').innerHTML = wHtml || '<span class="text-[10px] text-slate-400">보관된 아이템이 없습니다.</span>';
+      } else {
+          document.getElementById('warehouse-panel').classList.add('hidden');
+          document.getElementById('warehouse-panel').classList.remove('flex');
+      }
+
       window.renderMarketPrices(); window.renderProficiency();
       if(!document.getElementById('modal-trade').classList.contains('hidden')) window.renderTradeUI();
     };
@@ -1303,7 +1687,13 @@
     window.renderProficiency = function() {
       document.getElementById('prof-list').innerHTML = ['farming', 'mining', 'woodcraft', 'cooking', 'smithing'].map(cat => {
         const p = window.state.prof[cat];
-        return `<div class="flex flex-col items-center flex-1" title="${CAT_INFO[cat].name}"><div class="text-sm mb-0.5">${CAT_INFO[cat].icon}</div><div class="w-full bg-slate-200 h-1 rounded-full overflow-hidden mb-0.5 shadow-inner"><div class="h-full bg-amber-400" style="width: ${((p.exp % 3)/3)*100}%"></div></div><span class="text-[8px] font-black text-slate-600">Lv.${p.lv}</span></div>`;
+        let pct = 0;
+        if (p.lv === 1) pct = (p.exp / 10) * 100;
+        else if (p.lv === 2) pct = ((p.exp - 10) / 10) * 100;
+        else if (p.lv === 3) pct = ((p.exp - 20) / 30) * 100;
+        else pct = 100;
+        
+        return `<div class="flex flex-col items-center flex-1" title="${CAT_INFO[cat].name}"><div class="text-sm mb-0.5">${CAT_INFO[cat].icon}</div><div class="w-full bg-slate-200 h-1 rounded-full overflow-hidden mb-0.5 shadow-inner"><div class="h-full ${p.lv >= 3 ? 'bg-purple-500' : 'bg-amber-400'}" style="width: ${pct}%"></div></div><span class="text-[8px] font-black text-slate-600">Lv.${p.lv}</span></div>`;
       }).join('');
     };
 
@@ -1318,13 +1708,15 @@
 
     window.renderStackDOM = function(stack, isDragging = false, isViewOnly = false, stackIdx = 0) {
       let cardsHtml = stack.cards.map((cardId, idx) => {
-        const t = TILES[cardId] || TILES.wood; 
-        return `<div class="game-card ${t.cardClass} ${isViewOnly?'pointer-events-none':'pointer-events-auto cursor-grab'}" data-stack-id="${stack.id}" data-card-idx="${idx}" style="top: ${idx * 28}px; z-index: ${idx};" ${isDragging||isViewOnly?'':`onmouseenter="window.showTooltip('${cardId}', event)" onmouseleave="window.hideTooltip()" onmousemove="window.moveTooltip(event)"`}><div class="drop-shadow-sm mb-1">${t.icon.replace('text-3xl', 'text-2xl')}</div><span class="text-[10px] font-black">${t.name}</span></div>`;
+        let pureId = normalizeCard(cardId);
+        const t = TILES[pureId] || TILES.wood; 
+        let upgradedUI = cardId.endsWith('_upgraded') ? '<div class="absolute -top-2 -right-2 text-slate-600 drop-shadow-md text-lg"><i class="ph-fill ph-star"></i></div>' : '';
+        return `<div class="game-card ${t.cardClass} ${isViewOnly?'pointer-events-none':'pointer-events-auto cursor-grab'}" data-stack-id="${stack.id}" data-card-idx="${idx}" style="top: ${idx * 28}px; z-index: ${idx};" ${isDragging||isViewOnly?'':`onmouseenter="window.showTooltip('${pureId}', event)" onmouseleave="window.hideTooltip()" onmousemove="window.moveTooltip(event)"`}>${upgradedUI}<div class="drop-shadow-sm mb-1">${t.icon.replace('text-3xl', 'text-2xl')}</div><span class="text-[10px] font-black">${t.name}</span></div>`;
       }).join('');
       let craftHtml = '';
       if (stack.crafting) {
         const r = RECIPES.find(r => r.id === stack.crafting.recipeId);
-        const rn = r ? Array.from(new Set(r.results.map(id => TILES[id].name))).join(',') : '';
+        const rn = r ? Array.from(new Set(r.results.map(id => TILES[normalizeCard(id)].name))).join(',') : '';
         const ip = stack.crafting.left === stack.crafting.total;
         craftHtml = `<div class="absolute w-[4.5rem] h-[6.5rem] rounded-[0.75rem] bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center border-2 ${ip?'border-sky-300':'border-amber-400'} z-[99]" style="top: ${(stack.cards.length-1)*28}px; pointer-events: none;"><span class="text-[9px] font-black ${ip?'text-sky-100':'text-amber-400'} mb-1 leading-tight text-center px-1 break-keep">${ip?'제작 준비:<br>':'제작 중:<br>'}${rn}</span><div class="text-2xl font-black text-white ${ip?'':'animate-pulse'}">${stack.crafting.left} <span class="text-xs">T</span></div><div class="w-10 h-1.5 bg-slate-700 rounded-full mt-1.5 overflow-hidden"><div class="h-full ${ip?'bg-sky-300':'bg-amber-400'} transition-all" style="width: ${(1-stack.crafting.left/stack.crafting.total)*100}%"></div></div></div>`;
       }
@@ -1383,7 +1775,7 @@
       const myTrade = isPA ? {money: tr.pAMoney, items: tr.pAItems, accept: tr.pAAccept} : {money: tr.pBMoney, items: tr.pBItems, accept: tr.pBAccept};
       const oppTrade = isPA ? {money: tr.pBMoney, items: tr.pBItems, accept: tr.pBAccept} : {money: tr.pAMoney, items: tr.pAItems, accept: tr.pAAccept};
 
-      let inv = {}; window.state.stacks.forEach(s => s.cards.forEach(card => inv[card] = (inv[card]||0) + 1));
+      let inv = {}; window.state.stacks.forEach(s => s.cards.forEach(card => inv[normalizeCard(card)] = (inv[normalizeCard(card)]||0) + 1));
       myTrade.items.forEach(card => { if(inv[card]) inv[card]--; });
       const invHtml = Object.entries(inv).filter(([k,v])=>v>0).map(([k,v]) => `<div onclick="window.addToOffer('${k}')" class="px-2 py-1 bg-white border border-slate-200 rounded cursor-pointer hover:bg-sky-50 flex items-center gap-1 shadow-sm"><span class="${TILES[k].textColor}">${TILES[k].icon.replace('text-3xl','text-sm')}</span> <span class="text-[10px] font-bold text-slate-700">${TILES[k].name} x${v}</span></div>`).join('') || '<span class="text-[10px] text-slate-400">자원이 없습니다.</span>';
       const myOfferHtml = myTrade.items.map((k, idx) => `<div onclick="window.removeFromOffer(${idx})" class="px-2 py-1 bg-white border border-sky-300 rounded cursor-pointer hover:bg-rose-50 flex items-center gap-1 shadow-sm"><span class="${TILES[k].textColor}">${TILES[k].icon.replace('text-3xl','text-sm')}</span> <span class="text-[10px] font-bold text-slate-700">${TILES[k].name}</span></div>`).join('') || '<span class="text-[10px] text-sky-400">클릭하여 자원을 올려주세요.</span>';
