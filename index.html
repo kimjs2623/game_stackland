@@ -8,7 +8,7 @@
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <style>
     .custom-scroll { overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
-    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
     .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 10px; }
     .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
@@ -30,6 +30,8 @@
     .delay-2000 { animation-delay: 2s; }
 
     body { user-select: none; -webkit-user-drag: none; font-family: 'Pretendard', sans-serif; overflow: hidden; touch-action: none; }
+    #board-wrapper { touch-action: none; cursor: grab; }
+    #board-wrapper:active { cursor: grabbing; }
     #board-area { touch-action: none; } 
     
     .game-card {
@@ -38,7 +40,7 @@
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       position: absolute; background-color: white;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      transition: box-shadow 0.2s, transform 0.2s;
+      transition: box-shadow 0.2s;
       touch-action: none;
     }
     .game-card * { pointer-events: none; }
@@ -54,7 +56,6 @@
     .price-down { color: #ef4444; } 
     .price-neutral { color: #64748b; } 
 
-    /* 채팅창 애니메이션 */
     #chat-container { transition: height 0.3s ease-in-out; }
     .chat-open { height: 320px !important; }
     .chat-closed { height: 40px !important; }
@@ -69,7 +70,7 @@
 
   <!-- 1. 메인 메뉴 -->
   <div id="screen-menu" class="absolute inset-0 flex flex-col items-center justify-center z-50 transition-opacity duration-500">
-    <div class="bg-white/80 p-12 md:p-16 rounded-[3rem] backdrop-blur-xl border border-white shadow-[0_20px_60px_rgba(0,0,0,0.05)] text-center flex flex-col items-center max-w-3xl w-full mx-4 relative overflow-hidden">
+    <div class="bg-white/90 p-10 md:p-14 rounded-[3rem] backdrop-blur-xl border border-white shadow-[0_20px_60px_rgba(0,0,0,0.05)] text-center flex flex-col items-center max-w-3xl w-full mx-4 relative overflow-hidden">
       <h1 class="text-5xl md:text-7xl font-black mb-4 tracking-tighter text-sky-600 drop-shadow-sm">스카이 타이쿤</h1>
       <p class="text-slate-600 mb-6 text-sm md:text-lg font-bold bg-sky-50 px-6 py-2 rounded-full border border-sky-100">
         나만의 특산물을 마스터하고 시장을 지배하세요!
@@ -80,7 +81,12 @@
            <label class="text-xs font-black text-sky-600 uppercase tracking-wider text-center">싱글 플레이 설정</label>
            <div class="flex items-center justify-center gap-3">
              <span class="text-sm font-bold text-slate-700">목표 턴 수:</span>
-             <input type="number" id="single-max-turns-input" value="50" min="10" max="100" class="w-20 border-2 border-sky-300 rounded-lg px-2 py-1 font-black text-sky-700 focus:border-sky-500 outline-none text-center">
+             <select id="single-max-turns-input" class="w-24 border-2 border-sky-300 rounded-lg px-2 py-1 font-black text-sky-700 focus:border-sky-500 outline-none text-center bg-white cursor-pointer">
+                <option value="30">30 턴</option>
+                <option value="50" selected>50 턴 (표준)</option>
+                <option value="80">80 턴</option>
+                <option value="100">100 턴</option>
+             </select>
            </div>
         </div>
       </div>
@@ -94,15 +100,29 @@
         </button>
       </div>
 
-      <!-- 업데이트 내역 패널 -->
-      <div class="mt-8 w-full max-w-2xl bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm text-left max-h-40 overflow-y-auto custom-scroll">
-        <h3 class="text-sm font-black text-slate-800 mb-3 flex items-center gap-1"><i class="ph-bold ph-megaphone text-amber-500 text-lg"></i> 최근 업데이트 내역</h3>
-        <ul class="text-[11px] text-slate-600 space-y-2 font-bold">
-          <li><span class="text-white bg-indigo-500 px-1.5 py-0.5 rounded mr-1">v1.1</span><span class="text-indigo-700 font-black">50턴 대격변 & 숙련도 전문화 패치</span></li>
-          <li class="pl-2 border-l-2 border-indigo-100">- <b>버그픽스:</b> 재료가 소모되지 않고 무한 복사되던 연금술 버그를 수정했습니다.</li>
-          <li class="pl-2 border-l-2 border-indigo-100">- <b>턴 & 농사:</b> 최대 50턴 기준. 탈곡 레시피가 [농장+주민+밀]로 변경되며 씨앗이 3~4개씩 드랍됩니다! (바위 소모 X)</li>
-          <li class="pl-2 border-l-2 border-indigo-100">- <b>전문가의 특권:</b> 분야별 숙련도 <span class="text-amber-500">Lv.3 달성 시 해당 건물 결과물 2배</span>! <span class="text-purple-500">Lv.4 달성 시 2티어 특산물 1턴 단축</span>!</li>
-          <li class="pl-2 border-l-2 border-indigo-100">- <b>경제 스케일업:</b> 기초 가공품은 하위재료의 1.8배, 1티어 특산물 2.0배, 2티어 특산물 2.8배로 시장 가치가 대폭 상향되었습니다.</li>
+      <!-- 최근 업데이트 내역 -->
+      <div class="mt-8 w-full max-w-2xl bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-left max-h-48 overflow-y-auto custom-scroll relative">
+        <div class="sticky top-0 bg-white pb-2 border-b border-slate-100 mb-3 z-10 flex items-center justify-between">
+            <h3 class="text-sm font-black text-slate-800 flex items-center gap-1"><i class="ph-bold ph-megaphone text-amber-500 text-lg"></i> 최근 업데이트 노트</h3>
+            <span class="text-[10px] text-slate-400 font-bold">스크롤하여 확인</span>
+        </div>
+        <ul class="text-[11px] text-slate-600 space-y-3 font-bold">
+          <li>
+              <span class="text-white bg-indigo-500 px-1.5 py-0.5 rounded mr-1">v1.2</span><span class="text-indigo-700 font-black">편의성 및 밸런스 조정 패치</span><br>
+              <div class="pl-2 border-l-2 border-indigo-100 mt-1 space-y-1">
+                 - <b>보드 대확장 및 줌 기능:</b> 보드가 2400x1600 크기로 확장되었습니다. 좌측 하단 버튼으로 줌인/아웃하며 편하게 플레이하세요!<br>
+                 - <b>주민 투자 로직:</b> 이제 '주민 영입' 시 일회용 건축 자산인 [오두막]이 재료로 소모됩니다. 신중하게 투자하세요.<br>
+                 - <b>목표 턴 수 고정:</b> 자유 입력 방식을 폐지하고 30, 50, 80, 100턴 선택지로 표준화했습니다.
+              </div>
+          </li>
+          <li>
+              <span class="text-white bg-slate-400 px-1.5 py-0.5 rounded mr-1">v1.1</span><span class="text-slate-600 font-black">50턴 대격변 & 숙련도 전문화</span><br>
+              <div class="pl-2 border-l-2 border-slate-200 mt-1 space-y-1">
+                 - <b>농사 탈곡 개편:</b> 탈곡 레시피가 [농장+주민+밀]로 변경되며 씨앗이 3~4개씩 드랍됩니다! (바위 소모 X)<br>
+                 - <b>전문가의 특권:</b> 분야별 숙련도 <span class="text-amber-500">Lv.3 (해당 건물 생산량 2배)</span> 및 <span class="text-purple-500">Lv.4 (2티어 특산물 1턴 단축)</span> 특성 부여!<br>
+                 - <b>경제 스케일업:</b> 기초 가공품은 하위재료의 1.8배, 1티어 2배, 2티어 2.8배로 시장 가치가 대폭 상향되었습니다.
+              </div>
+          </li>
         </ul>
       </div>
 
@@ -118,7 +138,12 @@
           <label class="text-xs font-black text-indigo-500 uppercase tracking-wider">방장 전용 설정</label>
           <div class="flex items-center gap-3">
              <span class="text-sm font-bold text-slate-700 w-24">최대 턴 수:</span>
-             <input type="number" id="room-max-turns-input" value="50" min="10" max="100" class="flex-1 border-2 border-indigo-200 rounded-lg px-3 py-1.5 font-black text-indigo-700 focus:border-indigo-400 outline-none text-center">
+             <select id="room-max-turns-input" class="flex-1 border-2 border-indigo-200 rounded-lg px-3 py-1.5 font-black text-indigo-700 focus:border-indigo-400 outline-none text-center bg-white cursor-pointer">
+                <option value="30">30 턴 (빠름)</option>
+                <option value="50" selected>50 턴 (표준)</option>
+                <option value="80">80 턴 (긴 게임)</option>
+                <option value="100">100 턴 (하드코어)</option>
+             </select>
           </div>
         </div>
         <button onclick="window.createRoom()" class="w-full py-4 bg-indigo-500 text-white font-black rounded-xl shadow-md hover:bg-indigo-400 mt-1">새로운 방 만들기</button>
@@ -212,9 +237,22 @@
     <!-- 플레이 영역 -->
     <div class="flex-1 flex gap-4 overflow-hidden pointer-events-auto h-full relative">
       
-      <div class="flex-1 relative bg-white/50 rounded-[3rem] border-2 border-white shadow-xl backdrop-blur-md overflow-hidden" id="board-container">
-        <div class="absolute inset-0" id="board-area"></div>
+      <!-- 보드 래퍼 (줌/스크롤 적용) -->
+      <div class="flex-1 relative bg-white/50 rounded-[3rem] border-2 border-white shadow-xl backdrop-blur-md overflow-hidden flex flex-col" id="board-container">
         
+        <div id="board-wrapper" class="w-full h-full overflow-auto custom-scroll relative bg-slate-50/50">
+          <div id="board-area" class="absolute top-0 left-0 w-[2400px] h-[1600px]" style="transform-origin: top left; transform: scale(1.0);">
+             <!-- Cards go here -->
+          </div>
+        </div>
+        
+        <!-- [신규] 줌 컨트롤러 -->
+        <div class="absolute bottom-6 left-6 flex items-center gap-2 bg-white/90 p-2 rounded-2xl shadow-lg border border-slate-200 z-[60] backdrop-blur-md">
+            <button onclick="window.setZoom(-0.1)" class="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-sky-100 hover:text-sky-600 rounded-xl font-bold text-slate-600 transition-colors"><i class="ph-bold ph-minus"></i></button>
+            <span id="zoom-level-text" class="text-xs font-black text-slate-700 w-10 text-center">100%</span>
+            <button onclick="window.setZoom(0.1)" class="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-sky-100 hover:text-sky-600 rounded-xl font-bold text-slate-600 transition-colors"><i class="ph-bold ph-plus"></i></button>
+        </div>
+
         <div id="opponent-overlay" class="absolute inset-0 bg-indigo-900/10 backdrop-blur-[2px] hidden items-end justify-center pb-12 z-[50]">
            <button onclick="window.changeViewPlayer('me')" class="px-8 py-4 bg-indigo-600 text-white font-black text-lg rounded-full shadow-2xl hover:scale-105 transition-all flex items-center gap-2 border-4 border-indigo-400 animate-bounce">
              <i class="ph-bold ph-arrow-u-up-left text-2xl"></i> 내 영지로 돌아가기
@@ -224,7 +262,7 @@
            </div>
         </div>
         
-        <div id="market-zone" class="absolute bottom-6 right-6 w-36 h-36 bg-amber-50/90 border-4 border-dashed border-amber-300 rounded-[2rem] flex flex-col items-center justify-center transition-all z-0 shadow-sm backdrop-blur-sm">
+        <div id="market-zone" class="absolute bottom-6 right-6 w-36 h-36 bg-amber-50/90 border-4 border-dashed border-amber-300 rounded-[2rem] flex flex-col items-center justify-center transition-all z-[60] shadow-sm backdrop-blur-sm">
            <i class="ph-fill ph-storefront text-4xl text-amber-400 drop-shadow-sm mb-1"></i>
            <span class="font-black text-amber-600 text-[10px] bg-amber-100 px-3 py-1 rounded-full text-center leading-tight">시장에 매각</span>
         </div>
@@ -425,7 +463,8 @@
       lumber_mill: { name: '벌목장', category: 'woodcraft', cardClass: 'bg-emerald-700 text-white border-emerald-900', textColor: 'text-emerald-700', icon: '<i class="ph-fill ph-tent text-3xl"></i>', basePrice: 0 },
       quarry: { name: '채석장', category: 'mining', cardClass: 'bg-stone-700 text-white border-stone-900', textColor: 'text-stone-700', icon: '<i class="ph-fill ph-hammer text-3xl"></i>', basePrice: 0 },
       farm: { name: '농장', category: 'farming', cardClass: 'bg-yellow-600 text-white border-yellow-800', textColor: 'text-yellow-700', icon: '<i class="ph-fill ph-barn text-3xl"></i>', basePrice: 0 },
-      house: { name: '오두막', category: 'woodcraft', cardClass: 'bg-pink-400 text-white border-pink-600', textColor: 'text-pink-600', icon: '<i class="ph-fill ph-house text-3xl"></i>', basePrice: 0 },
+      // [수정됨] 오두막의 설명을 '건물'에서 '일회용 자산' 느낌으로 변경 (주민 생성 시 소모됨)
+      house: { name: '오두막', category: 'woodcraft', cardClass: 'bg-pink-400 text-white border-pink-600', textColor: 'text-pink-600', icon: '<i class="ph-fill ph-house text-3xl"></i>', basePrice: 0, type: '일회용 건축 자산' },
       furnace: { name: '화로', category: 'cooking', cardClass: 'bg-orange-600 text-white border-orange-800', textColor: 'text-orange-700', icon: '<i class="ph-fill ph-campfire text-3xl"></i>', basePrice: 0 },
       well: { name: '우물', category: 'farming', cardClass: 'bg-blue-300 text-blue-900 border-blue-500', textColor: 'text-blue-800', icon: '<i class="ph-fill ph-drop text-3xl text-blue-600"></i>', basePrice: 0 },
       
@@ -471,7 +510,9 @@
       { id: 'p_w1', category: 'farming', inputs: ['well', 'villager'], results: ['well', 'villager', 'water', 'water'], turns: 1, desc: '물 긷기' },
 
       { id: 'l1', category: 'general', inputs: ['stone', 'iron', 'wood'], results: ['laboratory'], turns: 3, desc: '연구소 건설' },
-      { id: 'r7', category: 'general', inputs: ['bread', 'house'], results: ['house', 'villager'], turns: 2, desc: '주민 영입' },
+      
+      // [수정됨] 주민 영입 시 오두막(house)이 재료로 소멸됨
+      { id: 'r7', category: 'general', inputs: ['house', 'bread'], results: ['villager'], turns: 2, desc: '주민 영입 (오두막 소모)' },
       
       { id: 'p1', category: 'woodcraft', inputs: ['lumber_mill', 'villager'], results: ['lumber_mill', 'villager', 'wood'], turns: 1, desc: '벌목 작업' },
       { id: 'p2', category: 'mining', inputs: ['quarry', 'villager'], results: ['quarry', 'villager', 'stone'], turns: 1, desc: '채석 작업' },
@@ -517,7 +558,8 @@
       prof: { farming: { lv: 1, exp: 0 }, mining: { lv: 1, exp: 0 }, woodcraft: { lv: 1, exp: 0 }, cooking: { lv: 1, exp: 0 }, smithing: { lv: 1, exp: 0 } },
       chat: [], isChatOpen: false, 
       activeTrade: null, localTradeOffer: { money: 0, items: [] }, lastTradeTime: 0,
-      isGameOver: false, lastEventTitle: null 
+      isGameOver: false, lastEventTitle: null,
+      zoom: 1.0 // [신규] 줌 레벨 상태
     };
     
     window.nextStackId = 1; window.unsubSnapshot = null; window.dragData = null;
@@ -541,8 +583,28 @@
       const target = document.getElementById(id);
       if(target) {
         target.classList.remove('hidden');
-        setTimeout(() => { target.classList.remove('opacity-0'); target.classList.add('opacity-100'); if (id === 'screen-game') target.classList.add('flex'); }, 50);
+        setTimeout(() => { 
+            target.classList.remove('opacity-0'); target.classList.add('opacity-100'); 
+            if (id === 'screen-game') {
+                target.classList.add('flex'); 
+                // 화면 띄울 때 중앙으로 스크롤 이동
+                setTimeout(() => {
+                    const wrapper = document.getElementById('board-wrapper');
+                    if (wrapper) {
+                        wrapper.scrollLeft = 1200 - wrapper.clientWidth / 2;
+                        wrapper.scrollTop = 800 - wrapper.clientHeight / 2;
+                    }
+                }, 100);
+            }
+        }, 50);
       }
+    };
+
+    // [신규] 줌 조절 함수
+    window.setZoom = function(delta) {
+        window.state.zoom = Math.max(0.4, Math.min(1.5, window.state.zoom + delta));
+        document.getElementById('zoom-level-text').innerText = Math.round(window.state.zoom * 100) + '%';
+        document.getElementById('board-area').style.transform = `scale(${window.state.zoom})`;
     };
 
     window.toggleRecipeModal = function() {
@@ -673,11 +735,11 @@
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.state.roomId);
       
       const initialStacks = [];
-      const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
+      const cx = 1200; const cy = 800; // 중심점 갱신 (2400x1600)
       const starts = ['wood', 'stone', 'seed', 'water', 'fire', 'villager'];
       starts.forEach((id, idx) => {
          const angle = (idx / starts.length) * Math.PI * 2; const r = 120;
-         initialStacks.push({ id: `s${idx}`, xRatio: (w/2 + Math.cos(angle)*r - 30)/w, yRatio: (h/2 + Math.sin(angle)*r - 50)/h, cards: [id], crafting: null });
+         initialStacks.push({ id: `s${idx}`, x: cx + Math.cos(angle)*r - 30, y: cy + Math.sin(angle)*r - 50, cards: [id], crafting: null });
       });
 
       const playersData = {};
@@ -707,9 +769,7 @@
       const myData = data.playersData[window.state.myPlayerId];
       window.state.money = myData.money; window.state.prof = myData.prof; 
       
-      const boardEl = document.getElementById('board-area');
-      const w = boardEl.clientWidth || 800; const h = boardEl.clientHeight || 600;
-      window.state.stacks = myData.stacks.map(s => ({...s, id: s.id || `s${window.nextStackId++}`, x: s.xRatio * w, y: s.yRatio * h}));
+      window.state.stacks = myData.stacks.map(s => ({...s, id: s.id || `s${window.nextStackId++}`}));
 
       let opts = `<option value="me">내 영지 보기</option>`;
       window.state.playerIds.forEach(p => { if(p !== window.state.myPlayerId) opts += `<option value="${p}">${p} 영지 정찰</option>`; });
@@ -750,9 +810,7 @@
     };
 
     window.spawnInitialResources = function() {
-      const boardEl = document.getElementById('board-area');
-      const w = boardEl.clientWidth || window.innerWidth/2; const h = boardEl.clientHeight || window.innerHeight/2;
-      const cx = w / 2; const cy = h / 2;
+      const cx = 1200; const cy = 800;
       const starts = ['wood', 'stone', 'seed', 'water', 'fire', 'villager'];
       starts.forEach((id, idx) => {
          const angle = (idx / starts.length) * Math.PI * 2; const r = 120;
@@ -812,8 +870,16 @@
       if (window.state.viewingOpponent) return window.notify("내 영지로 돌아와주세요.", "error");
 
       const picked = window.state.displayPool[poolIdx];
-      const boardEl = document.getElementById('board-area');
-      const cx = boardEl.clientWidth / 2 - 40; const cy = boardEl.clientHeight / 2 - 50;
+      const wrapper = document.getElementById('board-wrapper');
+      const br = document.getElementById('board-area').getBoundingClientRect();
+      const wrapperRect = wrapper.getBoundingClientRect();
+      
+      // 현재 보고 있는 뷰의 정중앙에 카드 드랍
+      const screenCenterX = wrapperRect.left + wrapper.clientWidth / 2;
+      const screenCenterY = wrapperRect.top + wrapper.clientHeight / 2;
+      const cx = (screenCenterX - br.left) / window.state.zoom - 40;
+      const cy = (screenCenterY - br.top) / window.state.zoom - 50;
+
       window.state.stacks.push({ id: `s${window.nextStackId++}`, x: cx, y: cy, cards: [picked], crafting: null });
       window.state.displayPool[poolIdx] = window.state.sharedPool.shift() || 'wood';
       
@@ -827,32 +893,27 @@
           if (stack.crafting.left <= 0) {
             const recipe = RECIPES.find(r => r.id === stack.crafting.recipeId);
             
-            // [버그 수정] 기본적으로 레시피의 'results' 배열에 정의된 아이템만 남깁니다.
             let finalCards = [...recipe.results];
 
-            // 특수 로직: r8 탈곡의 경우 50% 확률로 씨앗 1개 추가 드랍
             if (recipe.id === 'r8' && Math.random() < 0.5) {
                 finalCards.push('seed'); 
             }
             
-            // 숙련도 계산 및 특수 로직 (전문화)
             if (recipe.category && recipe.category !== 'general') {
                let p = window.state.prof[recipe.category];
                let oldLv = p.lv;
                p.exp += 1;
-               p.lv = Math.min(5, Math.floor(p.exp / 3) + 1); // 최대 5레벨
+               p.lv = Math.min(5, Math.floor(p.exp / 3) + 1); 
 
-               // Lv.3 특성 - 동일 카테고리 건물 생산량 2배
                let isBuildingProd = recipe.inputs.includes('villager') && recipe.inputs.some(i => ['lumber_mill', 'quarry', 'farm', 'furnace', 'well'].includes(i));
                
                if (p.lv >= 3 && isBuildingProd) {
-                   // results 안에서 건물/주민을 제외한 "순수 생산물"만 한 번 더 복사하여 지급
                    let newItems = [...recipe.results];
                    recipe.inputs.forEach(inp => {
                        let idx = newItems.indexOf(inp);
                        if(idx !== -1) newItems.splice(idx, 1);
                    });
-                   finalCards.push(...newItems); // 2배 복사!
+                   finalCards.push(...newItems); 
                    if(oldLv === p.lv) window.notify(`${CAT_INFO[recipe.category].name} 전문화(Lv.3): 생산량 2배!`, 'success');
                }
 
@@ -1003,8 +1064,7 @@
             const myData = data.playersData[window.state.myPlayerId];
             if (myData) {
                 window.state.money = myData.money;
-                const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
-                window.state.stacks = myData.stacks.map(s => ({...s, id: s.id || `s${window.nextStackId++}`, x: s.xRatio * w, y: s.yRatio * h}));
+                window.state.stacks = myData.stacks.map(s => ({...s, id: s.id || `s${window.nextStackId++}`}));
                 if (data.activeTrade?.pA !== window.state.myPlayerId) { 
                     window.notify("거래 성사! 보드 중앙과 골드를 확인하세요 🎁", "success");
                     window.state.localTradeOffer = { money: 0, items: [] };
@@ -1069,8 +1129,11 @@
        const newPAStacks = window.removeItemsFromStacks(data.playersData[pA_id].stacks, tr.pAItems);
        const newPBStacks = window.removeItemsFromStacks(data.playersData[pB_id].stacks, tr.pBItems);
        
-       tr.pBItems.forEach((item, idx) => newPAStacks.push({ id: `t_${Date.now()}_${idx}_b`, xRatio: 0.45 + Math.random()*0.1, yRatio: 0.45 + Math.random()*0.1, cards: [item], crafting: null }));
-       tr.pAItems.forEach((item, idx) => newPBStacks.push({ id: `t_${Date.now()}_${idx}_a`, xRatio: 0.45 + Math.random()*0.1, yRatio: 0.45 + Math.random()*0.1, cards: [item], crafting: null }));
+       let dropX = 1200 + (Math.random() - 0.5) * 100;
+       let dropY = 800 + (Math.random() - 0.5) * 100;
+       
+       tr.pBItems.forEach((item, idx) => newPAStacks.push({ id: `t_${Date.now()}_${idx}_b`, x: dropX, y: dropY, cards: [item], crafting: null }));
+       tr.pAItems.forEach((item, idx) => newPBStacks.push({ id: `t_${Date.now()}_${idx}_a`, x: dropX, y: dropY, cards: [item], crafting: null }));
 
        await updateDoc(roomRef, {
            [`playersData.${pA_id}.money`]: pA_money, [`playersData.${pA_id}.stacks`]: newPAStacks,
@@ -1083,8 +1146,7 @@
        if (window.state.myPlayerId === pA_id || window.state.myPlayerId === pB_id) {
            const myNewData = window.state.myPlayerId === pA_id ? {m: pA_money, s: newPAStacks} : {m: pB_money, s: newPBStacks};
            window.state.money = myNewData.m;
-           const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
-           window.state.stacks = myNewData.s.map(s => ({...s, id: s.id, x: s.xRatio * w, y: s.yRatio * h}));
+           window.state.stacks = myNewData.s.map(s => ({...s, id: s.id}));
            window.renderAll();
        }
     };
@@ -1099,10 +1161,10 @@
     };
 
     window.serializeStacks = function(stacks) {
-       const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
-       return stacks.map(s => ({ id: s.id || `s${window.nextStackId++}`, xRatio: s.x / w, yRatio: s.y / h, cards: s.cards, crafting: s.crafting }));
+       return stacks.map(s => ({ id: s.id || `s${window.nextStackId++}`, x: s.x, y: s.y, cards: s.cards, crafting: s.crafting }));
     };
 
+    // --- Drag Events ---
     const boardArea = document.getElementById('board-area');
     boardArea.addEventListener('pointerdown', e => {
       if (window.state.viewingOpponent || window.state.isGameOver) return;
@@ -1113,18 +1175,23 @@
 
       const stack = window.state.stacks[sIdx];
       const rect = cardEl.getBoundingClientRect(); const br = boardArea.getBoundingClientRect();
-      const ox = e.clientX - rect.left; const oy = e.clientY - rect.top;
+      const ox = (e.clientX - rect.left) / window.state.zoom; 
+      const oy = (e.clientY - rect.top) / window.state.zoom;
 
       if (stack.crafting && stack.crafting.left < stack.crafting.total) {
          const detached = stack.cards.splice(0); 
          const craftingData = stack.crafting; 
          window.state.stacks.splice(sIdx, 1);
-         window.state.draggingStack = { id: `drag_${Date.now()}`, x: e.clientX - br.left - ox, y: e.clientY - br.top - oy, cards: detached, crafting: craftingData };
+         const dragX = (e.clientX - br.left) / window.state.zoom - ox;
+         const dragY = (e.clientY - br.top) / window.state.zoom - oy;
+         window.state.draggingStack = { id: `drag_${Date.now()}`, x: dragX, y: dragY, cards: detached, crafting: craftingData };
       } else {
          stack.crafting = null; 
          const detached = stack.cards.splice(cardIdx);
          if (stack.cards.length === 0) window.state.stacks.splice(sIdx, 1); else window.checkAndSetRecipe(stack);
-         window.state.draggingStack = { id: `drag_${Date.now()}`, x: e.clientX - br.left - ox, y: e.clientY - br.top - oy, cards: detached, crafting: null };
+         const dragX = (e.clientX - br.left) / window.state.zoom - ox;
+         const dragY = (e.clientY - br.top) / window.state.zoom - oy;
+         window.state.draggingStack = { id: `drag_${Date.now()}`, x: dragX, y: dragY, cards: detached, crafting: null };
       }
 
       window.dragData = { ox, oy };
@@ -1134,7 +1201,8 @@
     boardArea.addEventListener('pointermove', e => {
       if (!window.state.draggingStack) return;
       const br = boardArea.getBoundingClientRect();
-      window.state.draggingStack.x = e.clientX - br.left - window.dragData.ox; window.state.draggingStack.y = e.clientY - br.top - window.dragData.oy;
+      window.state.draggingStack.x = (e.clientX - br.left) / window.state.zoom - window.dragData.ox;
+      window.state.draggingStack.y = (e.clientY - br.top) / window.state.zoom - window.dragData.oy;
       const el = document.getElementById('dragging-stack');
       if (el) { el.style.left = `${window.state.draggingStack.x}px`; el.style.top = `${window.state.draggingStack.y}px`; }
 
@@ -1169,7 +1237,7 @@
           if (success) { window.state.money += earned; window.notify(`매각 예약됨! 턴 종료 시 반영됩니다. <span class="text-amber-500 font-black">+${earned} G</span>`, "action"); }
           else window.notify("시장에서 안 사는 물건입니다 ❌", "error");
 
-          if (remains.length > 0) window.state.stacks.push({ id: `s${window.nextStackId++}`, x: window.state.draggingStack.x - 50, y: window.state.draggingStack.y - 100, cards: remains, crafting: null });
+          if (remains.length > 0) window.state.stacks.push({ id: `s${window.nextStackId++}`, x: window.state.draggingStack.x, y: window.state.draggingStack.y, cards: remains, crafting: null });
           window.state.draggingStack = null; window.dragData = null; window.renderAll(); window.fb_syncMyState(); return;
       }
 
@@ -1221,8 +1289,7 @@
       if (window.state.viewingOpponent && window.state.viewingPlayerId && window.state.playersData[window.state.viewingPlayerId]) {
          const oppData = window.state.playersData[window.state.viewingPlayerId];
          document.getElementById('overlay-opp-score').innerText = oppData.money;
-         const w = document.getElementById('board-area').clientWidth || 800; const h = document.getElementById('board-area').clientHeight || 600;
-         targetStacks = oppData.stacks.map(s => ({...s, x: s.xRatio * w, y: s.yRatio * h}));
+         targetStacks = oppData.stacks.map(s => ({...s}));
       }
 
       let html = targetStacks.map((stack, i) => window.renderStackDOM(stack, false, window.state.viewingOpponent, i)).join(''); 
