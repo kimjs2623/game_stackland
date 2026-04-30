@@ -23,6 +23,10 @@ export let state = {
     warehouseItems: {},
     activeQuest: null,
     questTimer: 0,
+    skyChanceLastCard: null,
+    nextProductionBoost: 0,
+    craftSpeedBoostTurns: 0,
+    freeUpgradeCharges: 0,
     zoom: 1.0,
     isGameOver: false,
     nextStackId: 0
@@ -44,6 +48,10 @@ export function initGame(mode = 'single', maxTurns = 50, specialty = null) {
     state.warehouseItems = {};
     state.activeQuest = null;
     state.questTimer = 0;
+    state.skyChanceLastCard = null;
+    state.nextProductionBoost = 0;
+    state.craftSpeedBoostTurns = 0;
+    state.freeUpgradeCharges = 0;
     state.isGameOver = false;
     state.prof = { farming: {lv:1, exp:0}, mining: {lv:1, exp:0}, woodcraft: {lv:1, exp:0}, cooking: {lv:1, exp:0}, smithing: {lv:1, exp:0} };
     state.tech = { tier_2: false, steel_upgrade: false, warehouse: false };
@@ -66,7 +74,6 @@ export function initGame(mode = 'single', maxTurns = 50, specialty = null) {
         });
     });
 
-    generateQuest(); // 시작 시 첫 퀘스트 즉시 부여
 }
 
 export function initMarket() {
@@ -152,6 +159,10 @@ export function checkAndSetRecipe(stack) {
         if (matched.tier === 2 && state.prof[matched.category]?.lv >= 4) {
             turns = Math.max(1, turns - 1); // 숙련도 레벨 4 이상이면 턴 감소
         }
+        if (state.craftSpeedBoostTurns > 0) {
+            turns = Math.max(1, turns - 1);
+            state.craftSpeedBoostTurns--;
+        }
         stack.crafting = { recipeId: matched.id, left: turns, total: turns };
     }
 }
@@ -178,7 +189,7 @@ export function processTurnEnd() {
     if (state.activeQuest) {
         state.questTimer--;
         if (state.questTimer <= 0) state.activeQuest = null;
-    } else if (state.turnCount % 10 === 0) { // 10턴마다 새 퀘스트
+    } else if (state.turnCount >= 10 && state.turnCount % 10 === 0) { // 10턴부터 10턴마다
         generateQuest();
     }
 
@@ -188,7 +199,12 @@ export function processTurnEnd() {
             stack.crafting.left--;
             if (stack.crafting.left <= 0) {
                 const recipe = Config.RECIPES.find(r => r.id === stack.crafting.recipeId);
-                stack.cards = [...recipe.results];
+                let crafted = [...recipe.results];
+                if (state.nextProductionBoost > 0) {
+                    crafted = [...crafted, ...recipe.results];
+                    state.nextProductionBoost--;
+                }
+                stack.cards = crafted;
                 stack.crafting = null;
                 gainExp(recipe.category, recipe.tier === 2 ? 50 : 20); // 제작 경험치
                 checkAndSetRecipe(stack);
@@ -252,7 +268,7 @@ export function generateQuest() {
 
 // 퀘스트 납품 처리
 export function completeQuest() {
-    if (!state.activeQuest) return false;
+    if (!state.activeQuest) return { success: false };
     const { reqItem, reqAmount, reward } = state.activeQuest;
     
     const available = countItemOnBoard(reqItem);
@@ -275,11 +291,66 @@ export function completeQuest() {
         }
         
         state.money += reward;
+        const skyChance = applyRandomSkyChance();
         state.activeQuest = null;
         state.questTimer = 0;
-        return true;
+        return { success: true, reward, skyChance };
     }
-    return false;
+    return { success: false };
+}
+
+function spawnItem(itemId, x = 1200, y = 800) {
+    state.stacks.push({
+        id: generateStackId(),
+        x: x + Math.random() * 50 - 25,
+        y: y + Math.random() * 50 - 25,
+        cards: [itemId],
+        crafting: null
+    });
+}
+
+function applyRandomSkyChance() {
+    const cards = [
+        { id: 1, name: '벼락치기', effect: '공정 1개 즉시 완료' },
+        { id: 2, name: '풍요의 축복', effect: '다음 생산량 2배' },
+        { id: 3, name: '마법 주머니', effect: '가공품 2개 즉시 획득' },
+        { id: 4, name: '떠돌이 일꾼', effect: '주민 1명 즉시 영입' },
+        { id: 5, name: '장인의 비급', effect: '전체 숙련도 경험치 +20' },
+        { id: 6, name: '설계 자동화', effect: '다음 3회 공정 턴 수 -1' },
+        { id: 7, name: '왕실의 하사금', effect: '골드 보너스 획득' },
+        { id: 8, name: '기술자의 도구', effect: '건물 1회 무료 강화권' },
+        { id: 9, name: '비밀 연구 일지', effect: '연구 데이터 1개 획득' },
+        { id: 10, name: '물자 수송대', effect: '기초 자원 세트 획득' }
+    ];
+    const picked = cards[Math.floor(Math.random() * cards.length)];
+
+    if (picked.id === 1) {
+        const target = state.stacks.find(s => s.crafting && s.crafting.left > 0);
+        if (target) target.crafting.left = 1;
+    } else if (picked.id === 2) {
+        state.nextProductionBoost = 1;
+    } else if (picked.id === 3) {
+        const pool = ['bread', 'iron', 'paper', 'brick', 'charcoal'];
+        spawnItem(pool[Math.floor(Math.random() * pool.length)]);
+        spawnItem(pool[Math.floor(Math.random() * pool.length)]);
+    } else if (picked.id === 4) {
+        spawnItem('villager');
+    } else if (picked.id === 5) {
+        Object.keys(state.prof).forEach((cat) => gainExp(cat, 20));
+    } else if (picked.id === 6) {
+        state.craftSpeedBoostTurns = 3;
+    } else if (picked.id === 7) {
+        state.money += 700;
+    } else if (picked.id === 8) {
+        state.freeUpgradeCharges = (state.freeUpgradeCharges || 0) + 1;
+    } else if (picked.id === 9) {
+        spawnItem('research');
+    } else if (picked.id === 10) {
+        ['wood', 'stone', 'iron', 'wheat', 'water'].forEach((itemId) => spawnItem(itemId));
+    }
+
+    state.skyChanceLastCard = picked;
+    return picked;
 }
 
 // 시장 매각 처리
