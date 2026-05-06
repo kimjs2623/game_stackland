@@ -65,6 +65,69 @@ window.renderAll = function() {
 
   const tradeModal = document.getElementById('modal-trade');
   if(tradeModal && !tradeModal.classList.contains('hidden') && window.renderTradeUI) window.renderTradeUI();
+  window.renderAll = function() {
+    const scoreEl = document.getElementById('score'); if(scoreEl) scoreEl.innerText = window.state.money;
+    const maxTurnDisplay = document.getElementById('max-turn-display'); if (maxTurnDisplay) maxTurnDisplay.innerText = `/ ${window.state.maxTurns}`;
+    const turnCountEl = document.getElementById('turn-count'); if(turnCountEl) turnCountEl.innerText = window.state.turnCount;
+
+    const poolEl = document.getElementById('ui-shared-pool');
+    if(poolEl) {
+        const norm = (id) => window.normalizeCard ? window.normalizeCard(id) : id.replace('_upgraded', '');
+        poolEl.innerHTML = window.state.displayPool.map((id, i) => {
+          const t = TILES[norm(id)];
+          return `<div onclick="window.handlePoolClick(${i})" onmouseenter="window.showTooltip('${id}', event)" onmouseleave="window.hideTooltip()" onmousemove="window.moveTooltip(event)" onwheel="window.scrollTooltip(event)" class="w-12 h-16 rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer border-2 bg-white hover:scale-105 shadow-sm border-slate-200"><div class="${t.textColor} drop-shadow-sm mb-1">${t.icon.replace('text-3xl', 'text-xl')}</div><span class="text-[9px] font-black ${t.textColor}">${t.name}</span></div>`;
+        }).join('');
+    }
+
+    let targetStacks = window.state.stacks;
+    let html = targetStacks.map((stack, i) => window.renderStackDOM(stack, false, false, i)).join(''); 
+    if (window.state.draggingStack) html += window.renderStackDOM(window.state.draggingStack, true, false, 999);
+    
+    const boardArea = document.getElementById('board-area'); if(boardArea) boardArea.innerHTML = html;
+
+    const activeQuestBox = document.getElementById('active-quest-box');
+    if (activeQuestBox && window.state.activeQuest) {
+        activeQuestBox.classList.remove('hidden'); activeQuestBox.classList.add('flex');
+        document.getElementById('quest-timer').innerText = `${window.state.questTimer}턴 남음`;
+        document.getElementById('quest-req-text').innerText = `${TILES[window.state.activeQuest.reqItem].name} ${window.state.activeQuest.reqCount}개`;
+    } else if (activeQuestBox) {
+        activeQuestBox.classList.add('hidden'); activeQuestBox.classList.remove('flex');
+    }
+
+    window.renderRecipeList();
+    window.renderMarketPrices(); 
+    window.renderProficiency();
+
+    let chanceBox = document.getElementById('sky-chance-box');
+    if (!chanceBox) {
+        chanceBox = document.createElement('div');
+        chanceBox.id = 'sky-chance-box';
+        chanceBox.className = 'absolute top-28 right-6 flex flex-col gap-3 z-[80] pointer-events-auto';
+        const gameScreen = document.getElementById('screen-game');
+        if (gameScreen) gameScreen.appendChild(chanceBox);
+    }
+    
+    if (window.state.skyChances && window.state.skyChances.length > 0) {
+        chanceBox.innerHTML = window.state.skyChances.map((c, idx) => `
+            <button onclick="window.useSkyChance(${idx})" class="flex flex-col items-center justify-center bg-gradient-to-br from-amber-400 to-orange-500 text-white p-2 rounded-2xl shadow-[0_10px_20px_rgba(245,158,11,0.3)] border-2 border-white hover:scale-110 transition-all group relative w-[4.5rem] h-[4.5rem] hover:rotate-3">
+                <i class="ph-fill ph-shooting-star text-3xl mb-1 group-hover:animate-pulse text-white drop-shadow-sm"></i>
+                <span class="text-[9px] font-black leading-tight text-center break-keep drop-shadow-sm">${c.name}</span>
+                <div class="absolute right-full mr-4 top-1/2 -translate-y-1/2 w-48 bg-slate-900/95 backdrop-blur-md text-white p-3 rounded-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-[100] shadow-2xl border border-slate-700 text-left normal-case tracking-normal transform translate-x-4 group-hover:translate-x-0">
+                    <span class="text-amber-400 font-black block mb-1.5 text-sm">${c.name}</span>
+                    <span class="text-slate-200 font-bold text-[11px] leading-relaxed break-keep">${c.effect}</span>
+                </div>
+            </button>
+        `).join('');
+    } else if (chanceBox) {
+        chanceBox.innerHTML = '';
+    }
+
+    const tradeModal = document.getElementById('modal-trade');
+    if(tradeModal && !tradeModal.classList.contains('hidden') && window.renderTradeUI) window.renderTradeUI();
+
+    // 💡 화면이 그려질 때마다 알아서 자동 저장 발동!
+    if (window.saveGame) window.saveGame();
+};
 };
 
 window.renderProficiency = function() {
@@ -99,28 +162,29 @@ window.renderRecipeList = function() {
 };
 
 window.renderStackDOM = function(stack, isDragging = false, isViewOnly = false, stackIdx = 0) {
+  const norm = (id) => window.normalizeCard ? window.normalizeCard(id) : id.replace('_upgraded', '');
   let cardsHtml = stack.cards.map((cardId, idx) => {
     let pureId = norm(cardId); const t = TILES[pureId] || TILES.wood; 
     let upgradedUI = cardId.endsWith('_upgraded') ? '<div class="absolute -top-2 -right-2 text-slate-600 drop-shadow-md text-lg"><i class="ph-fill ph-star"></i></div>' : '';
-    // 💡 필드 카드에도 onwheel 이벤트 추가
     return `<div class="game-card ${t.cardClass} pointer-events-auto cursor-grab" data-stack-id="${stack.id}" data-card-idx="${idx}" style="top: ${idx * 28}px; z-index: ${idx};" onmouseenter="window.showTooltip('${pureId}', event)" onmouseleave="window.hideTooltip()" onmousemove="window.moveTooltip(event)" onwheel="window.scrollTooltip(event)">${upgradedUI}<div class="drop-shadow-sm mb-1">${t.icon.replace('text-3xl', 'text-2xl')}</div><span class="text-[10px] font-black">${t.name}</span></div>`;
   }).join('');
 
   let craftHtml = '';
   if (stack.crafting) {
     const r = RECIPES.find(rec => rec.id === stack.crafting.recipeId);
-    const resultNames = r ? r.results.map(id => TILES[norm(id)].name).join(',') : '...';
+    const resultNames = r ? Array.from(new Set(r.results.map(id => TILES[norm(id)].name))).join(',') : '???';
     const progress = (1 - stack.crafting.left / stack.crafting.total) * 100;
-    
-    // 💡 제작창 우선순위를 z-[99]에서 z-[300]으로 상향! (호버해도 안 가려짐)
     craftHtml = `
       <div class="absolute w-[4.5rem] h-[6.5rem] rounded-[0.75rem] bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center border-2 border-amber-400 z-[300]" style="top: ${(stack.cards.length-1)*28}px; pointer-events: none;">
-        <span class="text-[8px] font-black text-amber-400 mb-1 leading-tight text-center px-1">제작 중:<br>${resultNames}</span>
+        <span class="text-[8px] font-black text-amber-400 mb-1 leading-tight text-center px-1 break-keep">제작:<br>${resultNames}</span>
         <div class="text-2xl font-black text-white animate-pulse">${stack.crafting.left} <span class="text-xs">T</span></div>
         <div class="w-10 h-1 bg-slate-700 rounded-full mt-2 overflow-hidden">
           <div class="h-full bg-amber-400 transition-all duration-300" style="width: ${progress}%"></div>
         </div>
       </div>`;
   }
-  return `<div ${isDragging?'id="dragging-stack"':''} class="absolute" style="left: ${stack.x}px; top: ${stack.y}px; z-index: ${isDragging?999:10+stackIdx}; transition: left 0.2s cubic-bezier(0.2, 0, 0, 1), top 0.2s cubic-bezier(0.2, 0, 0, 1);">${cardsHtml}${craftHtml}</div>`;
+  
+  // 💡 [핵심] 마우스로 잡고 있을 때(isDragging)는 이동 애니메이션을 아예 꺼서 즉각적으로 반응하게 만듦
+  const transStyle = isDragging ? '' : 'transition: left 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);';
+  return `<div ${isDragging?'id="dragging-stack"':''} class="absolute" style="left: ${stack.x}px; top: ${stack.y}px; z-index: ${isDragging?999:10+stackIdx}; ${transStyle}">${cardsHtml}${craftHtml}</div>`;
 };

@@ -2,9 +2,40 @@
 import { SPECIALTY_OPTIONS_ALL } from './data.js';
 
 // 싱글 플레이 시작
+// 💡 세이브/로드 기능 추가
+window.saveGame = function() {
+    // 멀티플레이거나 게임이 끝났으면 저장하지 않음
+    if (window.state.mode !== 'single' || window.state.isGameOver) return;
+    localStorage.setItem('sky_tycoon_save', JSON.stringify(window.state));
+};
+
+window.loadGame = function() {
+    const saved = localStorage.getItem('sky_tycoon_save');
+    if (saved) {
+        window.state = JSON.parse(saved);
+        window.nextStackId = Math.max(1, ...window.state.stacks.map(s => parseInt(s.id.replace('s', '')) || 0)) + 1;
+        return true;
+    }
+    return false;
+};
+
+// 💡 싱글 플레이 시작 로직 변경 (저장 데이터 확인)
 window.startGame = function(mode) {
     document.getElementById('screen-menu').classList.add('hidden');
-    if (mode === 'single') { window.state.mode = 'single'; window.initGame(); }
+    if (mode === 'single') { 
+        window.state.mode = 'single'; 
+        
+        // 저장된 데이터가 있는지 확인하고 의사 묻기
+        if (localStorage.getItem('sky_tycoon_save') && confirm("💾 이전 저장 데이터가 있습니다. 이어서 하시겠습니까?\n(취소 시 초기화 후 새로 시작합니다)")) {
+            window.loadGame();
+            window.showScreen('screen-game');
+            window.renderAll();
+        } else {
+            // 새로 시작
+            localStorage.removeItem('sky_tycoon_save');
+            window.initGame(); 
+        }
+    }
 };
 
 window.initGame = function() {
@@ -14,7 +45,7 @@ window.initGame = function() {
     window.state.isGameOver = false; window.state.lastEventTitle = null;
     window.state.prof = { farming: {lv:1,exp:0}, mining: {lv:1,exp:0}, woodcraft: {lv:1,exp:0}, cooking: {lv:1,exp:0}, smithing: {lv:1,exp:0} };
     window.state.tech = { tier_2: false, steel_upgrade: false, warehouse: false };
-    window.state.warehouseItems = {}; window.state.activeQuest = null;
+    window.state.warehouseItems = {}; window.state.activeQuest = null; window.state.skyChanceTickets = 0; window.state.skyChances = [];
     
     if(window.initMarket) window.initMarket();
     
