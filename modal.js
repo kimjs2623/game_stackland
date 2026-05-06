@@ -100,3 +100,25 @@ window.hideDrawModal = function() {
     m.classList.add('opacity-0');
     setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
 };
+
+window.showLeaderboardModal = function(turns) {
+    if (!turns) {
+        const input = document.getElementById('single-max-turns-input');
+        turns = input ? input.value : 50;
+    }
+    const m = document.getElementById('modal-leaderboard');
+    if(!m) return;
+    const sel = document.getElementById('leaderboard-turn-select');
+    if(sel) sel.value = turns;
+    
+    m.classList.remove('hidden'); m.classList.add('flex');
+    setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10);
+    if(window.fetchLeaderboard) window.fetchLeaderboard(turns);
+};
+
+window.closeLeaderboard = function() {
+    const m = document.getElementById('modal-leaderboard');
+    if(!m) return;
+    m.classList.add('opacity-0'); m.children[0].classList.add('scale-95');
+    setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
+};
