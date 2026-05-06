@@ -4,37 +4,67 @@ import { TILES, RECIPES, SELLABLE_ITEMS, CAT_INFO } from './data.js';
 const norm = (id) => window.normalizeCard ? window.normalizeCard(id) : id.replace('_upgraded', '');
 
 window.renderAll = function() {
-    const scoreEl = document.getElementById('score'); if(scoreEl) scoreEl.innerText = window.state.money;
-    const maxTurnDisplay = document.getElementById('max-turn-display'); if (maxTurnDisplay) maxTurnDisplay.innerText = `/ ${window.state.maxTurns}`;
-    const turnCountEl = document.getElementById('turn-count'); if(turnCountEl) turnCountEl.innerText = window.state.turnCount;
+  const scoreEl = document.getElementById('score'); if(scoreEl) scoreEl.innerText = window.state.money;
+  const maxTurnDisplay = document.getElementById('max-turn-display'); if (maxTurnDisplay) maxTurnDisplay.innerText = `/ ${window.state.maxTurns}`;
+  const turnCountEl = document.getElementById('turn-count'); if(turnCountEl) turnCountEl.innerText = window.state.turnCount;
 
-    const poolEl = document.getElementById('ui-shared-pool');
-    if(poolEl) {
-        poolEl.innerHTML = window.state.displayPool.map((id, i) => {
-          const t = TILES[norm(id)];
-          // 💡 공용 풀 카드에도 onwheel 이벤트 추가
-          return `<div onclick="window.handlePoolClick(${i})" onmouseenter="window.showTooltip('${id}', event)" onmouseleave="window.hideTooltip()" onmousemove="window.moveTooltip(event)" onwheel="window.scrollTooltip(event)" class="w-12 h-16 rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer border-2 bg-white hover:scale-105 shadow-sm border-slate-200"><div class="${t.textColor} drop-shadow-sm mb-1">${t.icon.replace('text-3xl', 'text-xl')}</div><span class="text-[9px] font-black ${t.textColor}">${t.name}</span></div>`;
-        }).join('');
-    }
+  const poolEl = document.getElementById('ui-shared-pool');
+  if(poolEl) {
+      const norm = (id) => window.normalizeCard ? window.normalizeCard(id) : id.replace('_upgraded', '');
+      poolEl.innerHTML = window.state.displayPool.map((id, i) => {
+        const t = TILES[norm(id)];
+        return `<div onclick="window.handlePoolClick(${i})" onmouseenter="window.showTooltip('${id}', event)" onmouseleave="window.hideTooltip()" onmousemove="window.moveTooltip(event)" onwheel="window.scrollTooltip(event)" class="w-12 h-16 rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer border-2 bg-white hover:scale-105 shadow-sm border-slate-200"><div class="${t.textColor} drop-shadow-sm mb-1">${t.icon.replace('text-3xl', 'text-xl')}</div><span class="text-[9px] font-black ${t.textColor}">${t.name}</span></div>`;
+      }).join('');
+  }
 
-    let targetStacks = window.state.stacks;
-    let html = targetStacks.map((stack, i) => window.renderStackDOM(stack, false, false, i)).join(''); 
-    if (window.state.draggingStack) html += window.renderStackDOM(window.state.draggingStack, true, false, 999);
-    
-    const boardArea = document.getElementById('board-area'); if(boardArea) boardArea.innerHTML = html;
+  let targetStacks = window.state.stacks;
+  let html = targetStacks.map((stack, i) => window.renderStackDOM(stack, false, false, i)).join(''); 
+  if (window.state.draggingStack) html += window.renderStackDOM(window.state.draggingStack, true, false, 999);
+  
+  const boardArea = document.getElementById('board-area'); if(boardArea) boardArea.innerHTML = html;
 
-    const activeQuestBox = document.getElementById('active-quest-box');
-    if (activeQuestBox && window.state.activeQuest) {
-        activeQuestBox.classList.remove('hidden'); activeQuestBox.classList.add('flex');
-        document.getElementById('quest-timer').innerText = `${window.state.questTimer}턴 남음`;
-        document.getElementById('quest-req-text').innerText = `${TILES[window.state.activeQuest.reqItem].name} ${window.state.activeQuest.reqCount}개`;
-    } else if (activeQuestBox) {
-        activeQuestBox.classList.add('hidden'); activeQuestBox.classList.remove('flex');
-    }
+  const activeQuestBox = document.getElementById('active-quest-box');
+  if (activeQuestBox && window.state.activeQuest) {
+      activeQuestBox.classList.remove('hidden'); activeQuestBox.classList.add('flex');
+      document.getElementById('quest-timer').innerText = `${window.state.questTimer}턴 남음`;
+      document.getElementById('quest-req-text').innerText = `${TILES[window.state.activeQuest.reqItem].name} ${window.state.activeQuest.reqCount}개`;
+  } else if (activeQuestBox) {
+      activeQuestBox.classList.add('hidden'); activeQuestBox.classList.remove('flex');
+  }
 
-    window.renderRecipeList();
-    window.renderMarketPrices(); 
-    window.renderProficiency();
+  window.renderRecipeList();
+  window.renderMarketPrices(); 
+  window.renderProficiency();
+
+  // === 스카이 찬스 보관함 UI 렌더링 (호버 툴팁 추가) ===
+  let chanceBox = document.getElementById('sky-chance-box');
+  if (!chanceBox) {
+      chanceBox = document.createElement('div');
+      chanceBox.id = 'sky-chance-box';
+      chanceBox.className = 'absolute top-28 right-6 flex flex-col gap-3 z-[80] pointer-events-auto';
+      const gameScreen = document.getElementById('screen-game');
+      if (gameScreen) gameScreen.appendChild(chanceBox);
+  }
+  
+  if (window.state.skyChances && window.state.skyChances.length > 0) {
+      chanceBox.innerHTML = window.state.skyChances.map((c, idx) => `
+          <button onclick="window.useSkyChance(${idx})" class="flex flex-col items-center justify-center bg-gradient-to-br from-amber-400 to-orange-500 text-white p-2 rounded-2xl shadow-[0_10px_20px_rgba(245,158,11,0.3)] border-2 border-white hover:scale-110 transition-all group relative w-[4.5rem] h-[4.5rem] hover:rotate-3">
+              <i class="ph-fill ph-shooting-star text-3xl mb-1 group-hover:animate-pulse text-white drop-shadow-sm"></i>
+              <span class="text-[9px] font-black leading-tight text-center break-keep drop-shadow-sm">${c.name}</span>
+              
+              <!-- 💡 카드 효과 설명 툴팁 (마우스 올리면 왼쪽으로 튀어나옴) -->
+              <div class="absolute right-full mr-4 top-1/2 -translate-y-1/2 w-48 bg-slate-900/95 backdrop-blur-md text-white p-3 rounded-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-[100] shadow-2xl border border-slate-700 text-left normal-case tracking-normal transform translate-x-4 group-hover:translate-x-0">
+                  <span class="text-amber-400 font-black block mb-1.5 text-sm">${c.name}</span>
+                  <span class="text-slate-200 font-bold text-[11px] leading-relaxed break-keep">${c.effect}</span>
+              </div>
+          </button>
+      `).join('');
+  } else if (chanceBox) {
+      chanceBox.innerHTML = '';
+  }
+
+  const tradeModal = document.getElementById('modal-trade');
+  if(tradeModal && !tradeModal.classList.contains('hidden') && window.renderTradeUI) window.renderTradeUI();
 };
 
 window.renderProficiency = function() {

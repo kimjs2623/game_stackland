@@ -49,11 +49,19 @@ window.showQuestDraft = function() {
     let pool = ['bread', 'iron', 'paper', 'brick', 'steel', 'charcoal', 'seed', 'wood'];
     if (window.state.unlockedSpecialty && !pool.includes(window.state.unlockedSpecialty)) { pool.push(window.state.unlockedSpecialty); }
     pool = pool.sort(() => 0.5 - Math.random()).slice(0, 3);
+    
     c.innerHTML = pool.map(id => {
         let mult = (id === window.state.unlockedSpecialty) ? 2.5 : 1.8;
         let reqCount = Math.floor(Math.random() * 2) + 2; let rReward = Math.floor(TILES[id].basePrice * reqCount * mult);
-        return `<div onclick="window.acceptQuest('${id}', ${reqCount}, ${rReward})" class="bg-slate-800/80 hover:bg-slate-700/90 border-2 border-slate-600 hover:border-amber-400 p-8 rounded-3xl cursor-pointer transition-all transform hover:-translate-y-2 flex flex-col items-center shadow-xl group"><div class="text-white drop-shadow-sm mb-2">${TILES[id].icon.replace('text-3xl', 'text-5xl')}</div><h3 class="text-xl font-black text-white mb-1 group-hover:text-amber-200">${TILES[id].name} ${reqCount}개 납품</h3><p class="text-amber-400 text-lg font-black bg-amber-900/50 px-4 py-1 rounded-full mt-2">보상: ${rReward} G</p></div>`;
+        
+        // 💡 보상 텍스트에 '+ ❓' 표시 추가
+        return `<div onclick="window.acceptQuest('${id}', ${reqCount}, ${rReward})" class="bg-slate-800/80 hover:bg-slate-700/90 border-2 border-slate-600 hover:border-amber-400 p-8 rounded-3xl cursor-pointer transition-all transform hover:-translate-y-2 flex flex-col items-center shadow-xl group">
+          <div class="text-white drop-shadow-sm mb-2">${TILES[id].icon.replace('text-3xl', 'text-5xl')}</div>
+          <h3 class="text-xl font-black text-white mb-1 group-hover:text-amber-200">${TILES[id].name} ${reqCount}개 납품</h3>
+          <p class="text-amber-400 text-lg font-black bg-amber-900/50 px-4 py-1 rounded-full mt-2">보상: ${rReward} G <span class="text-sky-300 font-bold ml-1">+ ❓</span></p>
+        </div>`;
     }).join('');
+    
     m.classList.remove('hidden'); m.classList.add('flex'); setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10);
 };
 
@@ -71,4 +79,24 @@ window.showNewsSplash = function(title, msg, type) {
     c.className = `bg-white/95 backdrop-blur-xl border-4 ${bColor} p-8 rounded-[3rem] shadow-[0_0_50px_rgba(245,158,11,0.3)] text-center transform scale-90 transition-transform duration-500 max-w-2xl`;
     s.classList.remove('hidden'); setTimeout(() => { s.classList.remove('opacity-0'); c.classList.remove('scale-90'); }, 50);
     setTimeout(() => { s.classList.add('opacity-0'); c.classList.add('scale-90'); setTimeout(() => s.classList.add('hidden'), 500); }, 3500);
+};
+
+window.showDrawModal = function() {
+    const m = document.getElementById('modal-draw');
+    const v = document.getElementById('draw-card-visual');
+    if (!m || !v) return;
+
+    // 모달을 열 때마다 카드를 뒷면 '?' 상태로 초기화
+    v.className = 'w-56 h-80 bg-gradient-to-br from-indigo-500 via-purple-600 to-indigo-800 rounded-3xl border-4 border-indigo-300 shadow-[0_0_40px_rgba(99,102,241,0.6)] flex items-center justify-center transition-all duration-300 hover:scale-110 hover:-translate-y-4';
+    v.innerHTML = '<span class="text-9xl font-black text-white drop-shadow-xl">?</span>';
+
+    m.classList.remove('hidden'); m.classList.add('flex');
+    setTimeout(() => m.classList.remove('opacity-0'), 10);
+};
+
+window.hideDrawModal = function() {
+    const m = document.getElementById('modal-draw');
+    if (!m) return;
+    m.classList.add('opacity-0');
+    setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
 };

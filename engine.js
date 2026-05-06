@@ -45,6 +45,7 @@ window.acceptQuest = function(reqItem, reqCount, reward) {
     window.notify("새로운 의뢰를 수락했습니다!", "action"); window.renderAll();
 };
 
+// 💡 수정됨: 즉시 발동하지 않고 '미확인 뽑기권'을 지급합니다.
 window.completeQuest = function() {
     let q = window.state.activeQuest; if (!q) return;
     
@@ -55,14 +56,110 @@ window.completeQuest = function() {
     while(needed > 0 && window.state.warehouseItems[q.reqItem] > 0) { window.state.warehouseItems[q.reqItem]--; needed--; }
     if (needed > 0) window.removeItemsFromBoard(q.reqItem, needed);
 
+    // 1. 골드는 즉시 획득
     window.state.money += q.reward;
     window.state.activeQuest = null;
+    window.notify(`의뢰 완료! <span class="text-amber-500 font-black">+${q.reward} G</span>`, "success");
     
-    // [신규] 스카이 찬스 랜덤 발동
-    const chance = SKY_CHANCES[Math.floor(Math.random() * SKY_CHANCES.length)];
-    window.applySkyChance(chance);
+    // 2. 뽑기 창 강제 오픈
+    if(window.showDrawModal) window.showDrawModal();
+    window.renderAll();
+};
 
-    window.notify(`의뢰 완료! <span class="text-amber-500 font-black">+${q.reward} G</span><br><span class="text-sky-500">스카이 찬스: ${chance.name} 발동!</span>`, "success");
+window.executeDraw = function() {
+    const visual = document.getElementById('draw-card-visual');
+    if (visual.classList.contains('animate-epic-draw')) return; // 연타 방지
+
+    // 1. 회전 이펙트 재생
+    visual.classList.add('animate-epic-draw');
+
+    // 2. 랜덤 찬스 뽑기 (보관용)
+    const chance = SKY_CHANCES[Math.floor(Math.random() * SKY_CHANCES.length)];
+    if (!window.state.skyChances) window.state.skyChances = [];
+
+    // 3. 카드가 반 바퀴 돌았을 때(0.4초) 카드 앞면(결과)으로 싹 바꾸기
+    setTimeout(() => {
+        visual.className = 'w-56 h-80 bg-gradient-to-br from-amber-300 via-orange-400 to-rose-500 rounded-3xl border-4 border-white shadow-[0_0_60px_rgba(245,158,11,1)] flex flex-col items-center justify-center p-6 text-center animate-bounce';
+        visual.innerHTML = `<i class="ph-fill ph-shooting-star text-7xl text-white mb-4 drop-shadow-md"></i><h3 class="text-3xl font-black text-white leading-tight mb-2 drop-shadow-md">${chance.name}</h3><p class="text-sm font-bold text-amber-50 bg-black/20 p-2 rounded-xl backdrop-blur-sm">${chance.effect}</p>`;
+    }, 400);
+
+    // 4. 카드 결과 확인 후 2.5초 뒤에 자동으로 창 닫히고 인벤토리에 킵
+    setTimeout(() => {
+        window.state.skyChances.push(chance);
+        if(window.hideDrawModal) window.hideDrawModal();
+        window.notify(`[${chance.name}] 카드가 킵(Keep) 되었습니다!`, 'action');
+        window.renderAll();
+    }, 2500);
+};
+
+window.useSkyChance = function(idx) {
+    if (!window.state.skyChances || !window.state.skyChances[idx]) return;
+    
+    // 인벤토리에서 카드 꺼내서 즉시 발동
+    const chance = window.state.skyChances.splice(idx, 1)[0];
+    window.applySkyChance(chance);
+    
+    window.notify(`<span class="text-sky-300 font-black">✨ 찬스 발동!</span><br><span class="text-white font-bold">${chance.name}</span><br><span class="text-xs text-slate-200">${chance.effect}</span>`, "success");
+    window.renderAll();
+};
+
+// 💡 신규 기능: 뽑기권을 깔 때 나오는 가챠(Gacha) 연출 로직
+window.openSkyChanceGacha = function() {
+    if (!window.state.skyTickets || window.state.skyTickets <= 0) return;
+    window.state.skyTickets--;
+    window.renderAll();
+
+    // 화면 덮는 연출용 모달 생성
+    const gachaSplash = document.createElement('div');
+    gachaSplash.className = 'fixed inset-0 z-[600] flex items-center justify-center bg-slate-900/90 backdrop-blur-md transition-opacity duration-300 opacity-0';
+    gachaSplash.innerHTML = `
+        <div class="bg-white p-10 rounded-[3rem] shadow-2xl flex flex-col items-center border-4 border-sky-300 transform scale-90 transition-transform duration-300 min-w-[300px]">
+            <h2 class="text-3xl font-black text-sky-600 mb-6 animate-pulse" id="gacha-title">스카이 찬스 뽑는 중...</h2>
+            <div id="gacha-shuffler" class="text-6xl text-amber-400 font-black flex items-center justify-center w-32 h-32 bg-amber-50 rounded-full shadow-inner border-4 border-amber-200">❓</div>
+            <div id="gacha-result" class="hidden flex-col items-center mt-6 w-full text-center"></div>
+        </div>
+    `;
+    document.body.appendChild(gachaSplash);
+    setTimeout(() => { gachaSplash.classList.remove('opacity-0'); gachaSplash.children[0].classList.remove('scale-90'); }, 10);
+
+    // 1.5초 동안 아이콘이 섞이는 애니메이션
+    let shuffleCount = 0;
+    const shuffleInterval = setInterval(() => {
+        const icons = ['🌟', '🎁', '⚡', '💰', '👑', '🔥', '💧', '🔨'];
+        document.getElementById('gacha-shuffler').innerText = icons[Math.floor(Math.random() * icons.length)];
+        shuffleCount++;
+        
+        if (shuffleCount > 15) {
+            clearInterval(shuffleInterval);
+            // 최종 결과 결정 및 저장
+            const chance = SKY_CHANCES[Math.floor(Math.random() * SKY_CHANCES.length)];
+            if (!window.state.skyChances) window.state.skyChances = [];
+            window.state.skyChances.push(chance);
+
+            // 결과 공개
+            document.getElementById('gacha-title').innerText = "축하합니다!";
+            document.getElementById('gacha-title').className = "text-4xl font-black text-amber-500 mb-4";
+            document.getElementById('gacha-shuffler').innerHTML = `<i class="ph-fill ph-shooting-star text-7xl text-amber-500 animate-bounce"></i>`;
+            
+            const resultBox = document.getElementById('gacha-result');
+            resultBox.innerHTML = `
+                <div class="bg-amber-100 px-6 py-4 rounded-2xl border-2 border-amber-300 w-full mb-6 shadow-sm">
+                    <span class="text-2xl font-black text-amber-700 block mb-1">${chance.name}</span>
+                    <span class="text-sm font-bold text-amber-600">${chance.effect}</span>
+                </div>
+                <button onclick="this.closest('.fixed').remove(); window.renderAll();" class="px-8 py-3 bg-sky-500 text-white font-black rounded-xl hover:bg-sky-400 shadow-md w-full transition-transform hover:scale-105">보관함에 넣기</button>
+            `;
+            resultBox.classList.remove('hidden'); resultBox.classList.add('flex');
+        }
+    }, 100);
+};
+
+// 💡 신규 기능: 보관함의 찬스를 실제 발동시키는 로직
+window.useSkyChance = function(idx) {
+    if (!window.state.skyChances || !window.state.skyChances[idx]) return;
+    const chance = window.state.skyChances.splice(idx, 1)[0];
+    window.applySkyChance(chance);
+    window.notify(`<span class="text-sky-300 font-black">✨ 스카이 찬스 발동!</span><br><span class="text-white font-bold">${chance.name}</span><br><span class="text-xs text-slate-200">${chance.effect}</span>`, "action");
     window.renderAll();
 };
 
@@ -70,20 +167,19 @@ window.applySkyChance = function(chance) {
     const cx = 1200, cy = 800;
     const drop = (items) => items.forEach((item, i) => window.state.stacks.push({ id: `sc_${Date.now()}_${i}`, x: cx + (Math.random()-0.5)*100, y: cy + (Math.random()-0.5)*100, cards: [item], crafting: null }));
 
-    if (chance.id === 1) { // 벼락치기
+    if (chance.id === 1) { 
         let craftingStack = window.state.stacks.find(s => s.crafting);
         if(craftingStack) craftingStack.crafting.left = 0;
     } else if (chance.id === 2) { drop(['wood','wood','wood','stone','stone','stone','wheat','wheat','wheat']); }
     else if (chance.id === 3) { drop(['bread','bread','iron','iron']); }
     else if (chance.id === 4) { drop(['villager']); }
-    else if (chance.id === 5) { // 장인의 비급
+    else if (chance.id === 5) { 
         Object.keys(window.state.prof).forEach(k => {
             window.state.prof[k].exp += 20;
             window.state.prof[k].lv = window.state.prof[k].exp >= 50 ? 4 : (window.state.prof[k].exp >= 20 ? 3 : (window.state.prof[k].exp >= 10 ? 2 : 1));
         });
-    } else if (chance.id === 6) { // 설계 자동화 (간소화 적용)
-        drop(['paper', 'brick']);
-    } else if (chance.id === 7) { window.state.money += 500; }
+    } else if (chance.id === 6) { drop(['paper', 'brick']); } 
+    else if (chance.id === 7) { window.state.money += 500; }
     else if (chance.id === 8) { drop(['warehouse_building']); }
     else if (chance.id === 9) { drop(['research']); }
     else if (chance.id === 10) { drop(['wood', 'stone', 'iron', 'wheat', 'water']); }
@@ -181,7 +277,6 @@ window.processTurnEnd = function() {
       window.showNewsSplash(ev.title, ev.msg, ev.type);
     }
 
-    // [수정] 퀘스트는 무조건 10턴부터 시작, 이후 5턴 주기
     if (window.state.turnCount >= 10 && window.state.turnCount % 5 === 0) {
         window.showQuestDraft();
     }
