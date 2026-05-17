@@ -40,6 +40,14 @@
     #board-wrapper:active { cursor: grabbing; }
     #board-area { touch-action: none; } 
     
+    @keyframes epicDraw {
+    0% { transform: scale(1) rotateY(0deg); }
+    50% { transform: scale(1.3) rotateY(180deg); filter: brightness(1.5); }
+    100% { transform: scale(1) rotateY(360deg); }
+}
+.animate-epic-draw {
+    animation: epicDraw 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
     .game-card {
   width: 4.5rem; height: 6.5rem;
   border-radius: 0.75rem; border-width: 3px;
@@ -149,30 +157,21 @@
          <i class="ph-bold ph-trophy text-amber-500 text-lg group-hover:scale-110 transition-transform"></i> 명예의 전당 보기
       </button>
 
-      <div class="mt-6 w-full max-w-2xl bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-left max-h-40 overflow-y-auto custom-scroll relative">
-        <div class="sticky top-0 bg-white pb-2 border-b border-slate-100 mb-3 z-10 flex items-center justify-between">
-            <h3 class="text-sm font-black text-slate-800 flex items-center gap-1"><i class="ph-bold ph-megaphone text-amber-500 text-lg"></i> 최근 업데이트 노트</h3>
-            <span class="text-[10px] text-slate-400 font-bold">스크롤하여 확인</span>
-        </div>
-        <ul class="text-[11px] text-slate-600 space-y-3 font-bold">
-          <li>
-              <span class="text-white bg-indigo-500 px-1.5 py-0.5 rounded mr-1">v1.5</span><span class="text-indigo-700 font-black">창고 및 퀘스트 UI/UX 대개편</span><br>
-              <div class="pl-2 border-l-2 border-indigo-100 mt-1 space-y-1">
-                 - <b>UI 스크롤 충돌 수정:</b> 툴팁이나 창고 스크롤 중 보드가 같이 확대/축소되던 버그를 고쳤습니다.<br>
-                 - <b>창고 커스텀 이동:</b> 창고 패널의 상단 제목 부분을 잡고 편한 위치로 자유롭게 드래그하세요! 창고 닫기(숨기기) 버튼도 추가되었습니다.<br>
-                 - <b>수동 보관 기능:</b> 이제 카드를 집어서 [대형 창고] 건물 위에 떨어뜨리면 수동으로 창고에 넣을 수 있습니다.<br>
-                 - <b>퀘스트 밸런스:</b> 퀘스트 등장 빈도를 10턴 주기로 늘려 압박감을 줄이고, 시작(1턴)부터 첫 퀘스트를 주어 방향성을 잡았습니다. 종류도 다양해졌습니다.
-              </div>
-          </li>
-          <li>
-              <span class="text-white bg-slate-400 px-1.5 py-0.5 rounded mr-1">v1.4</span><span class="text-slate-600 font-black">Industrial Revolution</span><br>
-              <div class="pl-2 border-l-2 border-slate-200 mt-1 space-y-1">
-                 - '연구 데이터'를 소모한 기술 연구(2티어 해금, 강철 강화, 창고 물류) 추가<br>
-                 - 매각 시 대량의 숙련도 XP 획득 가능
-              </div>
-          </li>
-        </ul>
-      </div>
+     <!-- 💡 완벽하게 고정된 업데이트 노트 영역 -->
+<div class="mt-6 w-full max-w-2xl bg-white rounded-2xl border border-slate-200 shadow-sm text-left max-h-40 flex flex-col overflow-hidden">
+  
+  <!-- 1. 헤더 영역 (절대 안 움직임, 스크롤의 영향을 받지 않음) -->
+  <div class="bg-white px-5 pt-4 pb-2 border-b border-slate-100 z-20 flex items-center justify-between shrink-0">
+      <h3 class="text-sm font-black text-slate-800 flex items-center gap-1">
+          <i class="ph-bold ph-megaphone text-amber-500 text-lg"></i> 최근 업데이트 노트
+      </h3>
+      <span class="text-[10px] text-slate-400 font-bold">스크롤하여 확인</span>
+  </div>
+
+  <!-- 2. 내용 영역 (오직 이 안에서만 스크롤됨) -->
+  <ul id="update-notes-list" class="text-[11px] text-slate-600 space-y-3 font-bold px-5 py-4 overflow-y-auto custom-scroll"></ul>
+  
+</div>
     </div>
   </div>
 
@@ -471,17 +470,15 @@
 
   <div id="modal-draw" class="fixed inset-0 z-[600] hidden flex-col items-center justify-center bg-slate-900/90 backdrop-blur-md p-4 opacity-0 transition-opacity duration-300">
     <div class="text-center mb-10">
-      <h2 class="text-4xl md:text-5xl font-black text-amber-400 mb-3 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]">스카이 찬스 획득!</h2>
-      <p class="text-white font-bold text-lg">카드 뭉치를 클릭해 보상을 뽑으세요.</p>
+        <h2 class="text-4xl md:text-5xl font-black text-amber-400 mb-3 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]">스카이 찬스 획득!</h2>
+        <p class="text-white font-bold text-lg">카드 뭉치를 클릭해 보상을 뽑으세요.</p>
     </div>
-    <!-- 뽑기 카드 영역 -->
     <div id="draw-deck" class="relative cursor-pointer perspective-1000" onclick="window.executeDraw()">
-      <div id="draw-card-visual" class="w-56 h-80 bg-gradient-to-br from-indigo-500 via-purple-600 to-indigo-800 rounded-3xl border-4 border-indigo-300 shadow-[0_0_40px_rgba(99,102,241,0.6)] flex items-center justify-center transition-all duration-300 hover:scale-110 hover:-translate-y-4">
-        <span class="text-9xl font-black text-white drop-shadow-xl">?</span>
-      </div>
+        <div id="draw-card-visual" class="w-56 h-80 bg-gradient-to-br from-indigo-500 via-purple-600 to-indigo-800 rounded-3xl border-4 border-indigo-300 shadow-[0_0_40px_rgba(99,102,241,0.6)] flex items-center justify-center transition-all duration-300 hover:scale-110 hover:-translate-y-4">
+            <span class="text-9xl font-black text-white drop-shadow-xl">?</span>
+        </div>
     </div>
-  </div>
-  
+</div>
 <!-- index.html 맨 아랫부분 스크립트 로딩부 -->
 <script type="module" src="./data.js"></script>
 <script type="module" src="./state.js"></script>

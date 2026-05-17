@@ -1,5 +1,5 @@
 // ui_render.js
-import { TILES, RECIPES, SELLABLE_ITEMS, CAT_INFO } from './data.js';
+import { TILES, RECIPES, SELLABLE_ITEMS, CAT_INFO, UPDATE_NOTES } from './data.js';
 
 const norm = (id) => window.normalizeCard ? window.normalizeCard(id) : id.replace('_upgraded', '');
 
@@ -188,3 +188,21 @@ window.renderStackDOM = function(stack, isDragging = false, isViewOnly = false, 
   const transStyle = isDragging ? '' : 'transition: left 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);';
   return `<div ${isDragging?'id="dragging-stack"':''} class="absolute" style="left: ${stack.x}px; top: ${stack.y}px; z-index: ${isDragging?999:10+stackIdx}; ${transStyle}">${cardsHtml}${craftHtml}</div>`;
 };
+// 업데이트 노트 렌더링 함수
+window.renderUpdateNotes = function() {
+  const list = document.getElementById('update-notes-list');
+  if (!list || typeof UPDATE_NOTES === 'undefined') return;
+
+  list.innerHTML = UPDATE_NOTES.map(note => `
+      <li>
+          <span class="text-white ${note.versionColor} px-1.5 py-0.5 rounded mr-1">${note.version}</span>
+          <span class="${note.titleColor} font-black">${note.title}</span><br>
+          <div class="pl-2 border-l-2 border-slate-100 mt-1 space-y-1">
+              ${note.lines.map(line => `- ${line}`).join('<br>')}
+          </div>
+      </li>
+  `).join('');
+};
+
+// 스크립트가 로드될 때(게임 접속 시) 즉시 실행해서 그려줌
+window.renderUpdateNotes();

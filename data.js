@@ -123,3 +123,29 @@ export const SKY_CHANCES = [
     { id: 9, "name": "비밀 연구 일지", "effect": "연구 데이터(RD) 1개 즉시 획득" },
     { id: 10, "name": "물자 수송대", "effect": "나무, 바위, 철, 밀, 물 각 1개씩 획득" }
   ];
+
+  // data.js 맨 아래 추가
+export const UPDATE_NOTES = [
+  {
+    version: "v1.5",
+    versionColor: "bg-indigo-500",
+    titleColor: "text-indigo-700",
+    title: "창고, 퀘스트, 그리고 뽑기(가챠) 시스템",
+    lines: [
+      "<b>UI 스크롤 픽스:</b> 툴팁이나 노트 스크롤 시 화면이 같이 움직이는 현상을 완벽히 차단했습니다.",
+      "<b>가챠(뽑기) 시스템:</b> 퀘스트 완료 시 즉시 발동되지 않고, 스카이 찬스를 뽑기권으로 얻어 원할 때 뽑을 수 있습니다.",
+      "<b>뽑기권 보관함:</b> 화면 우측에 뽑기권 보관함이 생성되며, 마우스를 올리면 효과를 미리 볼 수 있습니다.",
+      "<b>명예의 전당 버그 수정:</b> 랭킹 버튼이 작동하지 않던 문제를 수정했습니다."
+    ]
+  },
+  {
+    version: "v1.4",
+    versionColor: "bg-slate-400",
+    titleColor: "text-slate-600",
+    title: "Industrial Revolution",
+    lines: [
+      "'연구 데이터'를 소모한 기술 연구(2티어 해금, 강철 강화, 창고 물류) 추가",
+      "매각 시 대량의 숙련도 XP 획득 가능"
+    ]
+  }
+];

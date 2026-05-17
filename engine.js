@@ -68,27 +68,34 @@ window.completeQuest = function() {
 
 window.executeDraw = function() {
     const visual = document.getElementById('draw-card-visual');
-    if (visual.classList.contains('animate-epic-draw')) return; // 연타 방지
+    const deck = document.getElementById('draw-deck'); // 클릭 영역 전체
+    
+    // 💡 [수정] 클래스 이름 대신 확실한 전역 변수로 연타 방지
+    if (window.isDrawing) return; 
+    window.isDrawing = true;
+    deck.style.pointerEvents = 'none'; // 아예 클릭 자체를 마우스에서 막아버림
 
-    // 1. 회전 이펙트 재생
     visual.classList.add('animate-epic-draw');
 
-    // 2. 랜덤 찬스 뽑기 (보관용)
     const chance = SKY_CHANCES[Math.floor(Math.random() * SKY_CHANCES.length)];
     if (!window.state.skyChances) window.state.skyChances = [];
 
-    // 3. 카드가 반 바퀴 돌았을 때(0.4초) 카드 앞면(결과)으로 싹 바꾸기
+    // 0.4초 뒤 앞면으로 변경 (여기서 클래스가 날아가도 이제 상관없음)
     setTimeout(() => {
         visual.className = 'w-56 h-80 bg-gradient-to-br from-amber-300 via-orange-400 to-rose-500 rounded-3xl border-4 border-white shadow-[0_0_60px_rgba(245,158,11,1)] flex flex-col items-center justify-center p-6 text-center animate-bounce';
         visual.innerHTML = `<i class="ph-fill ph-shooting-star text-7xl text-white mb-4 drop-shadow-md"></i><h3 class="text-3xl font-black text-white leading-tight mb-2 drop-shadow-md">${chance.name}</h3><p class="text-sm font-bold text-amber-50 bg-black/20 p-2 rounded-xl backdrop-blur-sm">${chance.effect}</p>`;
     }, 400);
 
-    // 4. 카드 결과 확인 후 2.5초 뒤에 자동으로 창 닫히고 인벤토리에 킵
+    // 2.5초 뒤 창 닫고 인벤토리에 추가
     setTimeout(() => {
         window.state.skyChances.push(chance);
         if(window.hideDrawModal) window.hideDrawModal();
         window.notify(`[${chance.name}] 카드가 킵(Keep) 되었습니다!`, 'action');
         window.renderAll();
+        
+        // 💡 [수정] 창이 완전히 닫힌 후 다시 클릭 가능하게 자물쇠 풀기
+        window.isDrawing = false;
+        deck.style.pointerEvents = 'auto';
     }, 2500);
 };
 
